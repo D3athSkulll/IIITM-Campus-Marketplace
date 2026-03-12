@@ -17,6 +17,30 @@ const CONDITIONS = ['like-new', 'good', 'fair', 'poor'];
 const LISTING_STATUSES = ['active', 'sold', 'reserved', 'removed'];
 const LISTING_TYPES = ['sell', 'rent'];
 
+const auctionBidSchema = new mongoose.Schema(
+  {
+    bidder: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+      min: [0, 'Bid amount cannot be negative'],
+    },
+    showBidderName: {
+      type: Boolean,
+      default: false,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: true }
+);
+
 // ─── Listing Schema ─────────────────────────────────────────────────────────────
 const listingSchema = new mongoose.Schema(
   {
@@ -140,8 +164,68 @@ const listingSchema = new mongoose.Schema(
       },
     },
 
+    auctionMinBid: {
+      type: Number,
+      min: [0, 'Minimum bid cannot be negative'],
+      validate: {
+        validator: function (v) {
+          if (!this.auctionMode && (v === undefined || v === null)) return true;
+          return Number.isFinite(v) && v >= 0;
+        },
+        message: 'Minimum bid is required when auction mode is enabled',
+      },
+    },
+
+    auctionMaxBid: {
+      type: Number,
+      min: [0, 'Maximum bid cannot be negative'],
+      validate: {
+        validator: function (v) {
+          if (!this.auctionMode && (v === undefined || v === null)) return true;
+          if (!Number.isFinite(v) || v <= 0) return false;
+          if (this.auctionMinBid === undefined || this.auctionMinBid === null) return true;
+          return v > this.auctionMinBid;
+        },
+        message: 'Maximum bid must be greater than minimum bid when auction mode is enabled',
+      },
+    },
+
+    auctionEndsAt: {
+      type: Date,
+      default: null,
+    },
+
+    auctionClosedAt: {
+      type: Date,
+      default: null,
+    },
+
+    auctionWinner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+
+    // Transaction created automatically when auction closes
+    auctionTransactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Transaction',
+      default: null,
+    },
+
+    auctionBids: {
+      type: [auctionBidSchema],
+      default: [],
+    },
+
     // ── Engagement Metrics ────────────────────────────────────────────────────
     interestedUsers: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'User',
+      default: [],
+    },
+
+    auctionRequestedBy: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'User',
       default: [],
@@ -177,8 +261,9 @@ const listingSchema = new mongoose.Schema(
 
 // Flag high-interest listings that should be suggested for auction mode
 listingSchema.virtual('shouldSuggestAuction').get(function () {
-  // Suggest auction if 2+ buyers have shown interest and it's not already in auction mode
-  return !this.auctionMode && this.interestCount >= 2;
+  // Suggest auction if 2+ buyers have shown interest OR any buyer explicitly requested it.
+  const requestCount = Array.isArray(this.auctionRequestedBy) ? this.auctionRequestedBy.length : 0;
+  return !this.auctionMode && (this.interestCount >= 2 || requestCount > 0);
 });
 
 // ─── Indexes ────────────────────────────────────────────────────────────────────
@@ -186,6 +271,7 @@ listingSchema.index({ category: 1, status: 1 });
 listingSchema.index({ createdAt: -1 });
 listingSchema.index({ status: 1 });
 listingSchema.index({ price: 1 });
+listingSchema.index({ auctionMode: 1, auctionEndsAt: 1 });
 listingSchema.index(
   { title: 'text', description: 'text' },
   { weights: { title: 10, description: 5 } }

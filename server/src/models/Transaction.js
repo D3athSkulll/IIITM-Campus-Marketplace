@@ -69,7 +69,14 @@ const transactionSchema = new mongoose.Schema(
     chat: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Chat',
-      required: [true, 'Chat reference is required'],
+      default: null, // null for auction-sourced transactions
+    },
+
+    // How this transaction was created
+    source: {
+      type: String,
+      enum: ['negotiation', 'auction'],
+      default: 'negotiation',
     },
 
     agreedPrice: {
@@ -90,7 +97,7 @@ const transactionSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ['cash', 'upi', 'in-app-wallet'],
+      enum: ['cash', 'upi', 'card', 'in-app-wallet'],
       default: 'cash',
     },
 
@@ -194,9 +201,12 @@ transactionSchema.methods.complete = async function () {
     User.findByIdAndUpdate(this.seller, { $inc: { totalTrades: 1 } }),
   ]);
 
-  // Update listing status to 'sold'
+  // Mark listing as sold — removes it from public browse (getListings filters active only)
   const Listing = mongoose.model('Listing');
-  await Listing.findByIdAndUpdate(this.listing, { status: 'sold' });
+  await Listing.findByIdAndUpdate(this.listing, {
+    status: 'sold',
+    auctionMode: false, // clear auction mode so it doesn't appear in auction queries
+  });
 
   return this;
 };
