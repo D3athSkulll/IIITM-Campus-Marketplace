@@ -1,8 +1,12 @@
 require('dotenv').config();
 
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 const connectDB = require('./config/db');
+const { setIO } = require('./socket');
 
 // ─── Initialize Express ─────────────────────────────────────────────────────────
 const app = express();
@@ -20,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    message: '🎓 Campus Marketplace API is running',
+    message: 'Campus Marketplace API is running',
     timestamp: new Date().toISOString(),
   });
 });
@@ -33,6 +37,8 @@ app.use('/api/chats', require('./routes/chats'));
 app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/listings/:id/comments', require('./routes/comments'));
+app.use('/api/users', require('./routes/users'));
 
 // ─── 404 Handler ────────────────────────────────────────────────────────────────
 app.use((req, res) => {
@@ -41,19 +47,57 @@ app.use((req, res) => {
 
 // ─── Error Handler ──────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err.message);
+  console.error('Server error:', err.message);
   res.status(err.status || 500).json({
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
   });
 });
 
+// ─── HTTP Server + Socket.IO ────────────────────────────────────────────────────
+const httpServer = http.createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    credentials: true,
+  },
+});
+
+// Socket auth: verify JWT from handshake
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('Unauthorized'));
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.userId = String(decoded.userId || decoded._id || decoded.id);
+    next();
+  } catch {
+    next(new Error('Unauthorized'));
+  }
+});
+
+io.on('connection', (socket) => {
+  // Client joins a chat room to receive real-time events
+  socket.on('join-chat', (chatId) => {
+    if (chatId) socket.join(`chat:${chatId}`);
+  });
+
+  socket.on('leave-chat', (chatId) => {
+    if (chatId) socket.leave(`chat:${chatId}`);
+  });
+});
+
+// Make io available to controllers
+setIO(io);
+
 // ─── Start Server ───────────────────────────────────────────────────────────────
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
-    console.log(`\n🚀 Campus Marketplace Server running on port ${PORT}`);
-    console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+  httpServer.listen(PORT, () => {
+    console.log(`\nCampus Marketplace server running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
+    console.log(`Socket.IO:    ws://localhost:${PORT}`);
+    console.log(`Environment:  ${process.env.NODE_ENV || 'development'}\n`);
   });
 };
 

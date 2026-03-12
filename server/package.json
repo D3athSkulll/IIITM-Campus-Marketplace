@@ -9,7 +9,11 @@
     "seed": "node src/scripts/seed.js",
     "validate": "node src/tests/validate-models.js"
   },
-  "keywords": ["campus", "marketplace", "iiitm"],
+  "keywords": [
+    "campus",
+    "marketplace",
+    "iiitm"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -20,7 +24,8 @@
     "express": "^5.2.1",
     "express-validator": "^7.3.1",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.3.3"
+    "mongoose": "^9.3.3",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
