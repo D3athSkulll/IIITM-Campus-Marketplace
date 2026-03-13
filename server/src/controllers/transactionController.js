@@ -70,6 +70,64 @@ const getTransaction = async (req, res) => {
 };
 
 /**
+ * GET /api/transactions/by-chat/:chatId
+ * Fetch existing transaction linked to a chat (buyer or seller)
+ */
+const getTransactionByChat = async (req, res) => {
+  try {
+    const transaction = await Transaction.findOne({ chat: req.params.chatId })
+      .populate('listing', 'title images price status category condition')
+      .populate('buyer', 'displayName anonymousNickname realName showRealIdentity avatarUrl')
+      .populate('seller', 'displayName anonymousNickname realName showRealIdentity avatarUrl');
+
+    if (!transaction) return res.status(404).json({ error: 'Transaction not found for this chat.' });
+
+    const userId = req.user._id.toString();
+    if (transaction.buyer._id.toString() !== userId && transaction.seller._id.toString() !== userId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    const hasRated = await Rating.hasUserRated(transaction._id, req.user._id);
+    return res.json({ transaction, hasRated });
+  } catch (error) {
+    console.error('getTransactionByChat error:', error);
+    return res.status(500).json({ error: 'Failed to fetch transaction.' });
+  }
+};
+
+/**
+ * PUT /api/transactions/:id/pay
+ * Buyer marks payment as done (simulated payment flow)
+ */
+const markPaymentDone = async (req, res) => {
+  try {
+    const { paymentMethod = 'cash' } = req.body || {};
+
+    const transaction = await Transaction.findById(req.params.id);
+    if (!transaction) return res.status(404).json({ error: 'Transaction not found.' });
+
+    if (transaction.buyer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the buyer can confirm payment.' });
+    }
+
+    if (transaction.status === 'completed' || transaction.status === 'cancelled') {
+      return res.status(400).json({ error: 'This transaction is already closed.' });
+    }
+
+    if (transaction.paymentStatus !== 'paid') {
+      transaction.paymentStatus = 'paid';
+      transaction.paymentMethod = paymentMethod;
+      await transaction.save();
+    }
+
+    return res.json({ message: 'Payment confirmed.', transaction });
+  } catch (error) {
+    console.error('markPaymentDone error:', error);
+    return res.status(500).json({ error: 'Failed to confirm payment.' });
+  }
+};
+
+/**
  * PUT /api/transactions/:id/confirm
  * Buyer or seller confirms the transaction
  */
@@ -78,11 +136,31 @@ const confirmTransaction = async (req, res) => {
     const transaction = await Transaction.findById(req.params.id);
     if (!transaction) return res.status(404).json({ error: 'Transaction not found.' });
 
+    if (transaction.paymentStatus !== 'paid') {
+      return res.status(400).json({
+        error: 'Payment must be confirmed by the buyer before physical handover confirmation.',
+      });
+    }
+
     transaction.confirm(req.user._id);
     await transaction.save();
 
+    // Auto-complete when both parties have confirmed — no manual step needed
+    if (transaction.isFullyConfirmed) {
+      await transaction.complete();
+      await transaction.save();
+      return res.json({
+        message: 'Both parties confirmed! Trade is complete. The listing has been removed.',
+        transaction,
+        autoCompleted: true,
+      });
+    }
+
+    const isBuyer = transaction.buyer.toString() === req.user._id.toString();
     res.json({
-      message: transaction.isFullyConfirmed ? 'Both parties confirmed!' : 'Confirmation recorded.',
+      message: isBuyer
+        ? 'Receipt confirmed. Waiting for seller to confirm handover.'
+        : 'Handover confirmed. Waiting for buyer to confirm receipt.',
       transaction,
     });
   } catch (error) {
@@ -221,4 +299,33 @@ const getHistory = async (req, res) => {
   }
 };
 
-module.exports = { createTransaction, getTransaction, confirmTransaction, completeTransaction, requestReturn, submitRating, getHistory };
+/**
+ * GET /api/transactions/by-listing/:listingId
+ * Find the auction transaction for a listing (winner or seller only)
+ */
+const getTransactionByListing = async (req, res) => {
+  try {
+    const transaction = await Transaction.findOne({
+      listing: req.params.listingId,
+      source: 'auction',
+    })
+      .populate('listing', 'title images price status category condition')
+      .populate('buyer', 'displayName anonymousNickname realName showRealIdentity avatarUrl')
+      .populate('seller', 'displayName anonymousNickname realName showRealIdentity avatarUrl');
+
+    if (!transaction) return res.status(404).json({ error: 'No auction transaction found for this listing.' });
+
+    const userId = req.user._id.toString();
+    if (transaction.buyer._id.toString() !== userId && transaction.seller._id.toString() !== userId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    const hasRated = await Rating.hasUserRated(transaction._id, req.user._id);
+    return res.json({ transaction, hasRated });
+  } catch (error) {
+    console.error('getTransactionByListing error:', error);
+    return res.status(500).json({ error: 'Failed to fetch transaction.' });
+  }
+};
+
+module.exports = { createTransaction, getTransaction, getTransactionByChat, getTransactionByListing, markPaymentDone, confirmTransaction, completeTransaction, requestReturn, submitRating, getHistory };

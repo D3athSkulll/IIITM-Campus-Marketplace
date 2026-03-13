@@ -1,6 +1,16 @@
 const Chat = require('../models/Chat');
 const Listing = require('../models/Listing');
 const { QUICK_REPLIES } = require('../models/Chat');
+const { getIO } = require('../socket');
+
+// Helper: broadcast chat refresh to both participants
+const broadcastChatUpdate = (chatId, payload) => {
+  try {
+    getIO().to(`chat:${chatId}`).emit('chat:updated', payload);
+  } catch {
+    // Socket not ready (tests / seed), ignore
+  }
+};
 
 /**
  * GET /api/chats
@@ -93,7 +103,7 @@ const initiateChat = async (req, res) => {
       seller: listing.seller,
     });
 
-    chat.addMessage(buyerId, 'system', `👋 Chat started for "${listing.title}"`);
+    chat.addMessage(buyerId, 'system', `Chat started for "${listing.title}"`);
     await chat.save();
 
     await chat.populate([
@@ -143,6 +153,17 @@ const sendMessage = async (req, res) => {
     await chat.save();
 
     const newMessage = chat.messages[chat.messages.length - 1];
+
+    // Populate sender so the client can render immediately
+    await chat.populate('messages.sender', 'displayName anonymousNickname realName showRealIdentity avatarUrl');
+    const populatedMsg = chat.messages[chat.messages.length - 1];
+
+    broadcastChatUpdate(req.params.id, {
+      type: 'message',
+      chatId: req.params.id,
+      message: populatedMsg,
+    });
+
     res.json({ message: newMessage });
   } catch (error) {
     console.error('sendMessage error:', error);
@@ -170,6 +191,7 @@ const startNegotiation = async (req, res) => {
     chat.startNegotiation();
     await chat.save();
 
+    broadcastChatUpdate(req.params.id, { type: 'negotiation-started', chatId: req.params.id });
     res.json({ message: 'Negotiation started!', chat });
   } catch (error) {
     if (error.message === 'Negotiation already started') {
@@ -200,6 +222,7 @@ const submitOffer = async (req, res) => {
     chat.submitOffer(Number(amount), listingPrice);
     await chat.save();
 
+    broadcastChatUpdate(req.params.id, { type: 'offer-submitted', chatId: req.params.id });
     res.json({
       message: `Offer of ₹${amount} submitted (Round ${chat.negotiation.currentRound})`,
       cardsRemaining: chat.cardsRemaining,
@@ -239,6 +262,7 @@ const respondToOffer = async (req, res) => {
       await Listing.findByIdAndUpdate(chat.listing, { status: 'reserved' });
     }
 
+    broadcastChatUpdate(req.params.id, { type: 'offer-responded', chatId: req.params.id });
     res.json({
       outcome: chat.negotiation.outcome,
       agreedPrice: chat.negotiation.agreedPrice,
