@@ -89,7 +89,7 @@ const USERS = [
 ];
 
 // Listings are defined after we have user IDs, so we use a factory function.
-const buildListings = (sellers) => [
+const buildListings = (sellers, buyers) => [
   // ── Seller 1 (Heatblast42 / Aarav Singh) ───────────────────────────────────
   {
     seller: sellers[0]._id,
@@ -106,7 +106,9 @@ const buildListings = (sellers) => [
     ],
     priceReferenceLink: 'https://www.amazon.in/s?k=lenovo+ideapad+gaming+laptop',
     viewCount: 87,
-    interestCount: 4,
+    interestCount: 2,
+    interestedUsers: [buyers[0]._id, buyers[1]._id],
+    auctionRequestedBy: [buyers[0]._id],
     shouldSuggestAuction: true,
   },
   {
@@ -317,7 +319,7 @@ const buildListings = (sellers) => [
 async function seed() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ Connected to MongoDB\n');
+    console.log('Connected to MongoDB\n');
 
     // Wipe only seed accounts (by email) and their listings
     const seedEmails = USERS.map((u) => u.email);
@@ -325,51 +327,59 @@ async function seed() {
     const existingIds = existingUsers.map((u) => u._id);
 
     if (existingUsers.length > 0) {
-      console.log(`♻️  Removing ${existingUsers.length} existing seed user(s) and their listings…`);
+      console.log(`Removing ${existingUsers.length} existing seed user(s) and their listings...`);
       await Listing.deleteMany({ seller: { $in: existingIds } });
       await User.deleteMany({ _id: { $in: existingIds } });
     }
 
     // Create users (pre-save hook hashes passwords + sets alien avatars)
-    console.log('👥 Creating users…');
+    console.log('Creating users...');
     const createdUsers = [];
     for (const userData of USERS) {
       const u = new User(userData);
       await u.save();
       createdUsers.push(u);
-      console.log(`   ✓ ${u.email} → ${u.anonymousNickname} (${u.realName})`);
+      console.log(`   OK ${u.email} -> ${u.anonymousNickname} (${u.realName})`);
     }
 
-    // Sellers = first 3 users
+    // Sellers = first 3 users; buyers = last 2 users
     const sellers = createdUsers.slice(0, 3);
+    const buyers = createdUsers.slice(3);
 
     // Create listings
-    console.log('\n📦 Creating listings…');
-    const listings = buildListings(sellers);
+    console.log('\nCreating listings...');
+    const listings = buildListings(sellers, buyers);
     let count = 0;
+    let auctionDemoListingId = null;
     for (const listingData of listings) {
       const l = new Listing(listingData);
       await l.save();
       count++;
-      console.log(`   ✓ ${l.title.slice(0, 60)}…`);
+      if (!auctionDemoListingId && Array.isArray(listingData.auctionRequestedBy) && listingData.auctionRequestedBy.length > 0) {
+        auctionDemoListingId = l._id.toString();
+      }
+      console.log(`   OK ${l.title.slice(0, 60)}...`);
     }
 
-    console.log(`\n🎉 Seed complete! ${createdUsers.length} users, ${count} listings.\n`);
+    console.log(`\nSeed complete. ${createdUsers.length} users, ${count} listings.\n`);
     console.log('─'.repeat(60));
     console.log('LOGIN CREDENTIALS (password for all: testpass123)');
     console.log('─'.repeat(60));
     console.log('SELLERS:');
     createdUsers.slice(0, 3).forEach((u) =>
-      console.log(`  ${u.email}  →  ${u.anonymousNickname}  (${u.realName}, ${u.hostelBlock})`)
+      console.log(`  ${u.email}  ->  ${u.anonymousNickname}  (${u.realName}, ${u.hostelBlock})`)
     );
     console.log('\nBUYERS:');
     createdUsers.slice(3).forEach((u) =>
-      console.log(`  ${u.email}  →  ${u.anonymousNickname}  (${u.realName}, ${u.hostelBlock})`)
+      console.log(`  ${u.email}  ->  ${u.anonymousNickname}  (${u.realName}, ${u.hostelBlock})`)
     );
+    if (auctionDemoListingId) {
+      console.log(`\nBUYER AUCTION DEMO LISTING ID: ${auctionDemoListingId}`);
+    }
     console.log('─'.repeat(60));
     console.log('\nOpen http://localhost:3000 to explore the marketplace!');
   } catch (err) {
-    console.error('❌ Seed error:', err.message);
+    console.error('Seed error:', err.message);
     if (err.errors) {
       Object.entries(err.errors).forEach(([field, e]) =>
         console.error(`   ${field}: ${e.message}`)

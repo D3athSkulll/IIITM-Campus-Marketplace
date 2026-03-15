@@ -17,10 +17,10 @@ let failed = 0;
 
 function assert(condition, testName) {
   if (condition) {
-    console.log(`  ✅ PASS: ${testName}`);
+    console.log(`  [PASS] ${testName}`);
     passed++;
   } else {
-    console.log(`  ❌ FAIL: ${testName}`);
+    console.log(`  [FAIL] ${testName}`);
     failed++;
   }
 }
@@ -29,14 +29,14 @@ async function expectValidationError(Model, data, testName) {
   try {
     const doc = new Model(data);
     await doc.validate();
-    console.log(`  ❌ FAIL: ${testName} (expected validation error, got none)`);
+    console.log(`  [FAIL] ${testName} (expected validation error, got none)`);
     failed++;
   } catch (err) {
     if (err.name === 'ValidationError') {
-      console.log(`  ✅ PASS: ${testName}`);
+      console.log(`  [PASS] ${testName}`);
       passed++;
     } else {
-      console.log(`  ❌ FAIL: ${testName} (unexpected error: ${err.message})`);
+      console.log(`  [FAIL] ${testName} (unexpected error: ${err.message})`);
       failed++;
     }
   }
@@ -52,9 +52,9 @@ async function runTests() {
   const testURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/campus-marketplace-test';
   try {
     await mongoose.connect(testURI);
-    console.log(`📦 Connected to: ${testURI}\n`);
+    console.log(`Connected to: ${testURI}\n`);
   } catch (err) {
-    console.log(`⚠️  Could not connect to MongoDB (${err.message}).`);
+    console.log(`Warning: Could not connect to MongoDB (${err.message}).`);
     console.log('   Running validation-only tests (no DB writes)...\n');
   }
 
@@ -87,7 +87,7 @@ async function runTests() {
     validUser.anonymousNickname && validUser.anonymousNickname.length > 0,
     'Auto-generate anonymous nickname'
   );
-  console.log(`     → Generated nickname: "${validUser.anonymousNickname}"`);
+  console.log(`     -> Generated nickname: "${validUser.anonymousNickname}"`);
 
   // Should default to anonymous display
   assert(validUser.showRealIdentity === false, 'Default showRealIdentity is false');
@@ -182,8 +182,12 @@ async function runTests() {
   }, 'Reject listing with 6 images');
 
   // Auction mode suggestion virtual
-  validListing.interestCount = 3;
-  assert(validListing.shouldSuggestAuction === true, 'Suggest auction when interestCount >= 3');
+  validListing.interestCount = 2;
+  assert(validListing.shouldSuggestAuction === true, 'Suggest auction when interestCount >= 2');
+
+  validListing.interestCount = 0;
+  validListing.auctionRequestedBy = [new mongoose.Types.ObjectId()];
+  assert(validListing.shouldSuggestAuction === true, 'Suggest auction when a buyer explicitly requests auction mode');
 
   validListing.auctionMode = true;
   assert(validListing.shouldSuggestAuction === false, 'Do not suggest auction when already in auction mode');
@@ -268,14 +272,14 @@ async function runTests() {
   assert(chat.status === 'active', 'Chat still active after rejection with cards left');
 
   // Submit offer round 2
-  chat.submitOffer(300);
+  chat.submitOffer(200);
   assert(chat.negotiation.offers.length === 2, 'Round 2 offer submitted');
   assert(chat.cardsRemaining === 1, 'Cards remaining is 1');
 
   // Accept round 2
   chat.respondToOffer(true);
   assert(chat.negotiation.outcome === 'accepted', 'Negotiation outcome is accepted');
-  assert(chat.negotiation.agreedPrice === 300, 'Agreed price is 300');
+  assert(chat.negotiation.agreedPrice === 200, 'Agreed price is 200');
   assert(chat.status === 'completed', 'Chat status is completed after acceptance');
 
   // Test exhausting all cards
@@ -286,11 +290,11 @@ async function runTests() {
     mode: 'normal',
   });
   chat2.startNegotiation();
-  chat2.submitOffer(100);
-  chat2.respondToOffer(false);
-  chat2.submitOffer(150);
+  chat2.submitOffer(300);
   chat2.respondToOffer(false);
   chat2.submitOffer(200);
+  chat2.respondToOffer(false);
+  chat2.submitOffer(100);
   chat2.respondToOffer(false);
   assert(chat2.negotiation.outcome === 'rejected', 'Negotiation fails when all cards used');
   assert(chat2.status === 'failed', 'Chat status failed when all cards exhausted');
@@ -389,15 +393,15 @@ async function runTests() {
   console.log('╚══════════════════════════════════════════════════╝\n');
 
   if (failed === 0) {
-    console.log('🎉 All model validations passed! Phase 1 is complete.\n');
+    console.log('All model validations passed. Phase 1 is complete.\n');
   } else {
-    console.log(`⚠️  ${failed} test(s) failed. Please review above.\n`);
+    console.log(`Warning: ${failed} test(s) failed. Please review above.\n`);
   }
 
   // Disconnect
   if (mongoose.connection.readyState === 1) {
     await mongoose.disconnect();
-    console.log('📦 Disconnected from MongoDB.\n');
+    console.log('Disconnected from MongoDB.\n');
   }
 
   process.exit(failed > 0 ? 1 : 0);
