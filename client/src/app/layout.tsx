@@ -1,13 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Archivo_Black, Bebas_Neue, Lexend_Mega, Public_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
+import { SocketProvider } from "@/context/SocketContext";
 import BottomNav from "@/components/BottomNav";
 import Script from "next/script";
 
-const inter = Inter({
-  variable: "--font-sans",
+const publicSans = Public_Sans({
+  variable: "--font-public-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const lexendMega = Lexend_Mega({
+  variable: "--font-lexend-mega",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const archivoBlack = Archivo_Black({
+  variable: "--font-archivo-black",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const bebasNeue = Bebas_Neue({
+  variable: "--font-bebas-neue",
+  weight: "400",
   subsets: ["latin"],
   display: "swap",
 });
@@ -19,7 +40,9 @@ export const metadata: Metadata = {
   keywords: ["campus marketplace", "IIITM", "second hand", "buy sell", "Gwalior", "students"],
   manifest: "/manifest.json",
   icons: {
-    apple: "/icons/icon-192.png",
+    icon: "/app_logo.png",
+    apple: "/app_logo.png",
+    shortcut: "/app_logo.png",
   },
   appleWebApp: {
     capable: true,
@@ -33,7 +56,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0a1628",
+  themeColor: "#F1FAEE",
 };
 
 export default function RootLayout({
@@ -42,12 +65,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">
+    <html
+      lang="en"
+      className={`${publicSans.variable} ${lexendMega.variable} ${archivoBlack.variable} ${bebasNeue.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col font-sans relative isolate">
         <AuthProvider>
-          {children}
-          <BottomNav />
-          <Toaster richColors position="top-right" />
+          <SocketProvider>
+            {children}
+            <BottomNav />
+            <Toaster richColors position="top-right" />
+          </SocketProvider>
         </AuthProvider>
         <Script id="sw-register" strategy="afterInteractive">{`
           if ('serviceWorker' in navigator) {

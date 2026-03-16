@@ -3,68 +3,129 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─── Neobrutalism Theme for Campus Marketplace ───────────────────────────── */
+@font-face {
+  font-family: "Mabry Pro";
+  src: local("Mabry Pro");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bebas Kai";
+  src: local("Bebas Kai");
+  font-display: swap;
+}
+
 :root {
-  /* Neobrutalism core */
-  --main: #f5c518;         /* Gold/yellow accent — primary action color */
-  --main-foreground: #0a0a0a;
-  --bg: #fafafa;
-  --secondary-bg: #e8e8e8;
-  --border: #0a0a0a;
-  --text: #0a0a0a;
-  --shadow: #0a0a0a;
+  --clash-red: #E63946;
+  --clash-cream: #F1FAEE;
+  --clash-yellow: #F1C40F;
+  --clash-mist: #D8E2DC;
+  --clash-aqua: #A8DADC;
+  --clash-blue: #457B9D;
+  --clash-navy: #1D3557;
+  --clash-gold: #F9C74F;
+  --clash-orange: #F3722C;
+  --clash-teal: #2A9D8F;
 
-  /* Box shadow values (hard offset — the neobrutalism signature) */
-  --shadow-x: 4px;
-  --shadow-y: 4px;
-  --box-shadow: var(--shadow-x) var(--shadow-y) 0px 0px var(--shadow);
-  --box-shadow-lg: 6px 6px 0px 0px var(--shadow);
-  --reverse-box-shadow: calc(-1 * var(--shadow-x)) calc(-1 * var(--shadow-y)) 0px 0px var(--shadow);
+  --matcha-1: var(--clash-cream);
+  --matcha-2: var(--clash-aqua);
+  --matcha-3: var(--clash-gold);
+  --matcha-4: var(--clash-mist);
+  --matcha-5: var(--clash-yellow);
+  --black: var(--clash-navy);
 
-  /* Brand colors (campus identity) */
-  --navy: #0a1628;
-  --navy-light: #1a2d4d;
-  --navy-dark: #06101d;
-  --gold: #f5c518;
-  --gold-dark: #d4a017;
-  --gold-light: #fde68a;
+  --font-body: var(--font-public-sans);
+  --font-ui: var(--font-lexend-mega);
+  --font-display: var(--font-archivo-black);
+  --font-brand: var(--font-bebas-neue);
 
-  /* Shadcn-compatible aliases */
+  /* Compatibility aliases for existing components */
+  --teal-mist: var(--clash-teal);
+  --sage: var(--clash-aqua);
+  --sun-cream: var(--clash-cream);
+  --peach-milk: var(--clash-orange);
+  --pink-mist: var(--clash-red);
+  --lavender-mist: var(--clash-blue);
+  --aqua-soft: var(--clash-aqua);
+  --mint-soft: var(--clash-mist);
+  --sun-bright: var(--clash-yellow);
+  --coral-soft: var(--clash-orange);
+  --pink-soft: var(--clash-red);
+  --violet-soft: var(--clash-blue);
+  --sky: var(--clash-aqua);
+  --mint: var(--clash-teal);
+  --amber: var(--clash-gold);
+  --coral: var(--clash-orange);
+  --rose: var(--clash-red);
+  --violet: var(--clash-blue);
+  --violet-deep: var(--clash-navy);
+  --white: var(--clash-cream);
+  --charcoal: var(--clash-navy);
+
+  --indigo: var(--clash-blue);
+  --navy: var(--clash-navy);
+  --navy-light: var(--clash-blue);
+  --navy-dark: var(--clash-navy);
+  --gold: var(--clash-gold);
+  --gold-dark: var(--clash-orange);
+  --gold-light: var(--clash-cream);
+
+  --main: var(--clash-yellow);
+  --main-foreground: var(--clash-navy);
+  --bg: var(--clash-cream);
+  --surface: var(--clash-aqua);
+  --surface-alt: var(--clash-mist);
+  --surface-soft: var(--clash-gold);
+  --hero-panel: var(--clash-cream);
+  --text-soft: var(--clash-navy);
+  --interactive-hover: var(--clash-orange);
+  --interactive-muted: var(--clash-aqua);
+  --secondary-bg: var(--clash-blue);
+  --border: var(--clash-navy);
+  --text: var(--clash-navy);
+  --shadow: var(--clash-navy);
+  --ink: var(--clash-navy);
+
+  --shadow-x: 3px;
+  --shadow-y: 3px;
+  --box-shadow: var(--shadow-x) var(--shadow-y) 0 0 var(--shadow);
+  --box-shadow-lg: 5px 5px 0 0 var(--shadow);
+  --reverse-box-shadow: calc(-1 * var(--shadow-x)) calc(-1 * var(--shadow-y)) 0 0 var(--shadow);
+
   --background: var(--bg);
   --foreground: var(--text);
-  --card: #ffffff;
+  --card: var(--surface);
   --card-foreground: var(--text);
-  --popover: #ffffff;
+  --popover: var(--surface);
   --popover-foreground: var(--text);
   --primary: var(--main);
   --primary-foreground: var(--main-foreground);
   --secondary: var(--secondary-bg);
   --secondary-foreground: var(--text);
-  --muted: #e8e8e8;
-  --muted-foreground: #555555;
-  --accent: var(--main);
-  --accent-foreground: var(--main-foreground);
-  --destructive: #ef4444;
+  --muted: var(--surface-alt);
+  --muted-foreground: var(--text);
+  --accent: var(--surface-soft);
+  --accent-foreground: var(--text);
+  --destructive: var(--clash-red);
   --border-color: var(--border);
   --input: var(--border);
   --ring: var(--main);
   --radius: 0.375rem;
 
-  /* Sidebar */
-  --sidebar: var(--navy);
-  --sidebar-foreground: #ffffff;
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
   --sidebar-primary: var(--main);
   --sidebar-primary-foreground: var(--main-foreground);
-  --sidebar-accent: var(--navy-light);
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: var(--navy-light);
+  --sidebar-accent: var(--surface-soft);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
   --sidebar-ring: var(--main);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-body);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
@@ -89,19 +150,73 @@
   * {
     border-color: var(--border-color);
   }
+
   body {
     background-color: var(--bg);
     color: var(--text);
-    font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-body), "Public Sans", "Mabry Pro", sans-serif;
+    line-height: 1.5;
+    overflow-x: hidden;
   }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-ui), "Lexend Mega", var(--font-display), "Archivo Black", sans-serif;
+    letter-spacing: -0.01em;
+    color: var(--black);
+  }
+
+  button,
+  input,
+  textarea,
+  select,
+  label,
+  [role="button"] {
+    font-family: var(--font-body), "Public Sans", "Mabry Pro", sans-serif;
+    color: var(--black);
+  }
+
   html {
     scroll-behavior: smooth;
+    background: var(--bg);
+  }
+
+  a {
+    color: inherit;
   }
 }
 
-/* ─── Neobrutalism Utility Classes ────────────────────────────────────────── */
+.font-brand {
+  font-family: "Bebas Kai", var(--font-brand), "Bebas Neue", var(--font-display), "Archivo Black", sans-serif;
+}
 
-/* Hard shadow — the neobrutalism signature */
+.font-accent {
+  font-family: "Mabry Pro", var(--font-ui), "Lexend Mega", var(--font-body), "Public Sans", sans-serif;
+}
+
+.section-surface {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--box-shadow);
+}
+
+.section-soft {
+  background: var(--surface-soft);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--box-shadow);
+}
+
+.muted-note {
+  color: var(--black);
+  font-weight: 600;
+}
+
 .nb-shadow {
   box-shadow: var(--box-shadow);
 }
@@ -110,15 +225,13 @@
   box-shadow: var(--box-shadow-lg);
 }
 
-/* Card style */
 .nb-card {
-  background: white;
+  background: var(--surface);
   border: 2px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--box-shadow);
 }
 
-/* Button press effect on hover */
 .nb-hover {
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
@@ -133,12 +246,11 @@
   box-shadow: none;
 }
 
-/* Input neobrutalism */
 .nb-input {
   border: 2px solid var(--border);
   border-radius: var(--radius);
-  background: white;
-  box-shadow: 2px 2px 0px 0px var(--border);
+  background: var(--surface-alt);
+  box-shadow: 2px 2px 0 0 var(--border);
   transition: box-shadow 0.1s, transform 0.1s;
 }
 
@@ -148,25 +260,18 @@
   transform: translate(2px, 2px);
 }
 
-/* Badge */
 .nb-badge {
   border: 2px solid var(--border);
   font-weight: 700;
   border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--black);
 }
 
-/* Strip pattern for hero */
 .nb-stripes {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 8px,
-    rgba(0,0,0,0.04) 8px,
-    rgba(0,0,0,0.04) 16px
-  );
+  background: var(--surface-alt);
 }
 
-/* ─── Mobile Bottom Navigation ────────────────────────────────────────────── */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -177,45 +282,99 @@
   }
 }
 
-/* ─── Custom Scrollbar ────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #aaa; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-/* ─── Touch optimizations ─────────────────────────────────────────────────── */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--matcha-5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--black);
+}
+
 @media (hover: none) and (pointer: coarse) {
-  button, a, [role="button"] {
+  button,
+  a,
+  [role="button"] {
     -webkit-tap-highlight-color: transparent;
   }
 }
 
-/* ─── Animations ──────────────────────────────────────────────────────────── */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%,
+  100% {
+    opacity: 0.68;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
-.animate-fade-up { animation: fade-up 0.4s ease-out forwards; }
-.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-fade-up {
+  animation: fade-up 0.35s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
 .animate-shimmer {
-  animation: shimmer 1.8s linear infinite;
-  background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
-  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  background: var(--surface-alt);
 }
 
-/* Stagger for lists */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.10s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.20s; }
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+
+/* Bid line graph animation */
+.bid-line-draw {
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bid-line-reset {
+  transition: none;
+}
