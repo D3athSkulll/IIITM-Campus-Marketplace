@@ -6,30 +6,30 @@ import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
   // Base: neobrutalism — bold border, hard shadow, font, transition
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md border-2 border-[#0a0a0a] text-sm font-bold whitespace-nowrap select-none disabled:pointer-events-none disabled:opacity-50 transition-all duration-100 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md border-2 border-[var(--ink)] text-sm font-bold whitespace-nowrap select-none disabled:pointer-events-none disabled:opacity-50 transition-all duration-100 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        // Primary — yellow bg, hard shadow, translates on hover to "press" into shadow
+        // Primary
         default:
-          "bg-[#f5c518] text-[#0a0a0a] shadow-[4px_4px_0px_0px_#0a0a0a] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[4px] active:translate-y-[4px]",
-        // Outline — white bg, hard shadow
+          "bg-[var(--main)] text-[var(--main-foreground)] shadow-[4px_4px_0px_0px_var(--ink)] hover:bg-[var(--surface-alt)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[4px] active:translate-y-[4px]",
+        // Outline
         outline:
-          "bg-white text-[#0a0a0a] shadow-[4px_4px_0px_0px_#0a0a0a] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[4px] active:translate-y-[4px]",
-        // Secondary — light gray bg
+          "bg-[var(--surface)] text-[var(--ink)] shadow-[4px_4px_0px_0px_var(--ink)] hover:bg-[var(--surface-alt)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[4px] active:translate-y-[4px]",
+        // Secondary
         secondary:
-          "bg-[#e8e8e8] text-[#0a0a0a] shadow-[4px_4px_0px_0px_#0a0a0a] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none",
-        // Ghost — no bg, no shadow, just text
+          "bg-[var(--secondary-bg)] text-[var(--ink)] shadow-[4px_4px_0px_0px_var(--ink)] hover:bg-[var(--surface-alt)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none",
+        // Ghost
         ghost:
-          "border-transparent bg-transparent text-[#0a0a0a] shadow-none hover:bg-[#e8e8e8]",
-        // Destructive — red
+          "border-transparent bg-transparent text-[var(--ink)] shadow-none hover:bg-[var(--interactive-hover)]",
+        // Destructive
         destructive:
-          "bg-red-500 text-white shadow-[4px_4px_0px_0px_#0a0a0a] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none",
-        // Navy — campus brand dark
+          "bg-[var(--surface-soft)] text-[#1D3557] shadow-[4px_4px_0px_0px_var(--ink)] hover:bg-[var(--surface-alt)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none",
+        // Navy
         navy:
-          "bg-[#0a1628] text-white shadow-[4px_4px_0px_0px_#0a0a0a] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none",
-        // Link — text only
-        link: "border-transparent bg-transparent text-[#0a1628] underline-offset-4 hover:underline shadow-none",
+          "bg-[var(--navy)] text-[#F1FAEE] shadow-[4px_4px_0px_0px_var(--ink)] hover:bg-[var(--navy-light)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none",
+        // Link
+        link: "border-transparent bg-transparent text-[#1D3557] underline-offset-4 hover:underline shadow-none",
       },
       size: {
         default: "h-10 px-4 py-2",
