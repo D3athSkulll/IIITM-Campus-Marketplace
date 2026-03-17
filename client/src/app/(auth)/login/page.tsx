@@ -40,9 +40,9 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur">
+    <Card className="border-0 shadow-2xl bg-[var(--surface)]/95 backdrop-blur">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-[var(--navy)]">Sign in</CardTitle>
+        <CardTitle className="text-2xl text-[#1D3557]">Sign in</CardTitle>
         <CardDescription>Enter your @iiitm.ac.in email to continue</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -75,14 +75,14 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col gap-3">
           <Button
             type="submit"
-            className="w-full bg-[var(--navy)] hover:bg-[var(--navy-dark)] text-white"
+            className="w-full bg-[var(--navy)] hover:bg-[var(--navy-light)] text-[#F1FAEE]"
             disabled={loading}
           >
             {loading ? "Signing in…" : "Sign in"}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             No account?{" "}
-            <Link href="/register" className="text-[var(--gold-dark)] font-medium hover:underline">
+            <Link href="/register" className="text-[#1D3557] font-medium hover:underline">
               Register here
             </Link>
           </p>

@@ -49,9 +49,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur">
+    <Card className="border-0 shadow-2xl bg-[var(--surface)]/95 backdrop-blur">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-[var(--navy)]">Create account</CardTitle>
+        <CardTitle className="text-2xl text-[#1D3557]">Create account</CardTitle>
         <CardDescription>Join the IIITM campus marketplace</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -97,14 +97,14 @@ export default function RegisterPage() {
         <CardFooter className="flex flex-col gap-3">
           <Button
             type="submit"
-            className="w-full bg-[var(--navy)] hover:bg-[var(--navy-dark)] text-white"
+            className="w-full bg-[var(--navy)] hover:bg-[var(--navy-light)] text-[#1D3557]"
             disabled={loading}
           >
             {loading ? "Creating account…" : "Create account"}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             Already have an account?{" "}
-            <Link href="/login" className="text-[var(--gold-dark)] font-medium hover:underline">
+            <Link href="/login" className="text-[#1D3557] font-medium hover:underline">
               Sign in
             </Link>
           </p>
