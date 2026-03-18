@@ -9,19 +9,35 @@ import Navbar from "@/components/Navbar";
 import ListingCard from "@/components/ListingCard";
 import DemandCard from "@/components/DemandCard";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  PlusCircle,
+  ChevronLeft,
+  ChevronRight,
+  ShoppingBag,
+  Laptop,
+  BookOpen,
+  Shirt,
+  Sofa,
+  Pencil,
+  Trophy,
+  Backpack,
+  Package,
+  Search,
+  ClipboardList,
+  Handshake,
+} from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = [
-  { value: "all", label: "All", emoji: "🛍️" },
-  { value: "electronics", label: "Electronics", emoji: "💻" },
-  { value: "books", label: "Books", emoji: "📚" },
-  { value: "clothing", label: "Clothing", emoji: "👕" },
-  { value: "furniture", label: "Furniture", emoji: "🪑" },
-  { value: "stationery", label: "Stationery", emoji: "✏️" },
-  { value: "sports", label: "Sports", emoji: "⚽" },
-  { value: "accessories", label: "Accessories", emoji: "🎒" },
-  { value: "other", label: "Other", emoji: "📦" },
+  { value: "all", label: "All", icon: ShoppingBag },
+  { value: "electronics", label: "Electronics", icon: Laptop },
+  { value: "books", label: "Books", icon: BookOpen },
+  { value: "clothing", label: "Clothing", icon: Shirt },
+  { value: "furniture", label: "Furniture", icon: Sofa },
+  { value: "stationery", label: "Stationery", icon: Pencil },
+  { value: "sports", label: "Sports", icon: Trophy },
+  { value: "accessories", label: "Accessories", icon: Backpack },
+  { value: "other", label: "Other", icon: Package },
 ];
 
 type Tab = "listings" | "demands";
@@ -85,42 +101,45 @@ export default function HomePage() {
   const handleCategory = (cat: string) => { setCategory(cat); setListingPage(1); setDemandPage(1); };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafafa]">
+    <div className="min-h-screen flex flex-col bg-transparent">
       <Navbar onSearch={handleSearch} searchValue={search} />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-5 space-y-5">
 
-        {/* Hero — neobrutalism style */}
-        <div className="relative rounded-md overflow-hidden bg-[#0a1628] border-2 border-[#0a0a0a] shadow-[6px_6px_0px_0px_#0a0a0a] px-6 py-8 sm:py-10 text-white nb-stripes animate-fade-up">
-          <div className="relative z-10">
+        {/* Hero */}
+        <div className="rounded-md bg-[var(--surface)] border-2 border-[#1D3557] shadow-[6px_6px_0px_0px_#1D3557] px-6 py-8 sm:py-10 text-[#1D3557] animate-fade-up">
+          <div>
             <div className="inline-block mb-3">
-              <span className="text-[10px] font-black uppercase tracking-widest bg-[#f5c518] text-[#0a0a0a] px-2 py-1 border border-[#0a0a0a] rounded-sm">
+              <span className="font-accent text-[10px] font-bold uppercase tracking-widest bg-[var(--surface-soft)] text-[#1D3557] px-2 py-1 border border-[#1D3557] rounded-sm">
                 ABV-IIITM Gwalior
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black mb-2 leading-tight tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 leading-tight tracking-tight text-[#1D3557]">
               Buy &amp; Sell<br className="sm:hidden" /> on Campus
             </h1>
-            <p className="text-white/60 text-sm mb-5 max-w-sm font-medium">
+            <p className="text-[#1D3557] text-sm mb-5 max-w-sm font-medium">
               Alien identities. Bargaining cards. Fair ratings. Only for IIITM students.
             </p>
             {!isLoading && (
               user ? (
                 <Link href="/listings/new">
-                  <Button className="font-black gap-2 shadow-[4px_4px_0px_0px_#0a0a0a]">
+                  <Button className="font-black gap-2 shadow-[4px_4px_0px_0px_#1D3557]">
                     <PlusCircle className="w-4 h-4" /> List Something
                   </Button>
                 </Link>
               ) : (
                 <Link href="/register">
-                  <Button className="font-black shadow-[4px_4px_0px_0px_#0a0a0a]">
-                    Join Now →
+                  <Button className="font-black shadow-[4px_4px_0px_0px_#1D3557]">
+                    Join Now
                   </Button>
                 </Link>
               )
             )}
           </div>
-          <div className="absolute right-4 sm:right-10 top-1/2 -translate-y-1/2 text-7xl sm:text-8xl opacity-10 select-none animate-float">🎓</div>
+          <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#1D3557]">
+            <ShoppingBag className="w-4 h-4" />
+            Trusted student-only marketplace
+          </div>
         </div>
 
         {/* Category pills */}
@@ -132,30 +151,33 @@ export default function HomePage() {
               onClick={() => handleCategory(cat.value)}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-black transition-all border-2 whitespace-nowrap
                 ${category === cat.value
-                  ? "bg-[#f5c518] text-[#0a0a0a] border-[#0a0a0a] shadow-[3px_3px_0px_0px_#0a0a0a]"
-                  : "bg-white text-[#0a0a0a] border-[#0a0a0a] hover:bg-[#f5f5f5] shadow-[2px_2px_0px_0px_#0a0a0a]"
+                  ? "bg-[var(--surface-soft)] text-[#1D3557] border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557]"
+                  : "bg-[var(--surface)] text-[#1D3557] border-[#1D3557] hover:bg-[var(--surface-alt)] shadow-[2px_2px_0px_0px_#1D3557]"
                 }`}
             >
-              <span>{cat.emoji}</span>
+              <cat.icon className="w-3.5 h-3.5" />
               <span>{cat.label}</span>
             </button>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex border-2 border-[#0a0a0a] rounded-md overflow-hidden w-fit shadow-[3px_3px_0px_0px_#0a0a0a]">
+        <div className="flex border-2 border-[#1D3557] rounded-md overflow-hidden w-fit shadow-[3px_3px_0px_0px_#1D3557]">
           {(["listings", "demands"] as Tab[]).map((t, idx) => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`px-5 py-2 text-sm font-black transition-colors ${idx > 0 ? "border-l-2 border-[#0a0a0a]" : ""}
+              className={`px-5 py-2 text-sm font-black transition-colors ${idx > 0 ? "border-l-2 border-[#1D3557]" : ""}
                 ${tab === t
-                  ? "bg-[#0a1628] text-white"
-                  : "bg-white text-[#0a0a0a] hover:bg-[#f5f5f5]"
+                  ? "bg-[var(--main)] text-[#1D3557]"
+                  : "bg-[var(--surface-alt)] text-[#1D3557] hover:bg-[var(--surface)]"
                 }`}
             >
-              {t === "listings" ? "📦 Listings" : "🔍 Buyer Demands"}
+              <span className="inline-flex items-center gap-1.5">
+                {t === "listings" ? <Package className="w-3.5 h-3.5" /> : <Search className="w-3.5 h-3.5" />}
+                {t === "listings" ? "Listings" : "Buyer Demands"}
+              </span>
             </button>
           ))}
         </div>
@@ -166,14 +188,14 @@ export default function HomePage() {
             {loadingListings ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="rounded-md bg-[#e8e8e8] animate-shimmer aspect-[3/4] border-2 border-[#0a0a0a]" />
+                  <div key={i} className="rounded-md bg-[var(--surface-alt)] animate-shimmer aspect-[3/4] border-2 border-[#1D3557]" />
                 ))}
               </div>
             ) : listings.length === 0 ? (
-              <div className="text-center py-16 border-2 border-[#0a0a0a] rounded-md bg-white shadow-[4px_4px_0px_0px_#0a0a0a]">
-                <div className="text-5xl mb-3">🕵️</div>
+              <div className="text-center py-16 border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557]">
+                <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="font-black text-lg">No listings found</p>
-                <p className="text-sm text-[#555] mt-1 font-medium">Try a different category or search term</p>
+                <p className="text-sm text-[#1D3557] mt-1 font-medium">Try a different category or search term</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -200,7 +222,7 @@ export default function HomePage() {
         {tab === "demands" && (
           <>
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-[#555]">Sellers: see what buyers need 👇</p>
+              <p className="text-sm font-bold text-[#1D3557] inline-flex items-center gap-1.5"><Handshake className="w-4 h-4" />Sellers: see what buyers need</p>
               {user && (
                 <Link href="/demands/new">
                   <Button size="sm" variant="outline" className="gap-1.5 font-black">
@@ -212,14 +234,14 @@ export default function HomePage() {
             {loadingDemands ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="rounded-md bg-[#e8e8e8] animate-shimmer h-28 border-2 border-[#0a0a0a]" />
+                  <div key={i} className="rounded-md bg-[var(--surface-alt)] animate-shimmer h-28 border-2 border-[#1D3557]" />
                 ))}
               </div>
             ) : demands.length === 0 ? (
-              <div className="text-center py-16 border-2 border-[#0a0a0a] rounded-md bg-white shadow-[4px_4px_0px_0px_#0a0a0a]">
-                <div className="text-5xl mb-3">📋</div>
+              <div className="text-center py-16 border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557]">
+                <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="font-black text-lg">No buyer demands yet</p>
-                {user && <p className="text-sm text-[#555] mt-1 font-medium">Post what you&apos;re looking for!</p>}
+                {user && <p className="text-sm text-[#1D3557] mt-1 font-medium">Post what you&apos;re looking for!</p>}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -234,3 +256,4 @@ export default function HomePage() {
     </div>
   );
 }
+
