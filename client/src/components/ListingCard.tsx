@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Flame, Gavel, Package } from "lucide-react";
 
 interface Seller {
   _id: string;
@@ -28,10 +29,10 @@ interface Listing {
 }
 
 const CONDITION_COLORS: Record<string, string> = {
-  "like-new": "bg-green-400 text-[#0a0a0a]",
-  good: "bg-blue-400 text-white",
-  fair: "bg-yellow-400 text-[#0a0a0a]",
-  poor: "bg-red-400 text-white",
+  "like-new": "bg-[#A8DADC] text-[#1D3557]",
+  good: "bg-[#D8E2DC] text-[#1D3557]",
+  fair: "bg-[#F9C74F] text-[#1D3557]",
+  poor: "bg-[#E63946] text-[#F1FAEE]",
 };
 
 export default function ListingCard({ listing }: { listing: Listing }) {
@@ -42,9 +43,9 @@ export default function ListingCard({ listing }: { listing: Listing }) {
   return (
     <Link href={`/listings/${listing._id}`} className="group block">
       {/* Neobrutalism card: bold border + hard shadow, lifts on hover */}
-      <div className="bg-white border-2 border-[#0a0a0a] rounded-md shadow-[4px_4px_0px_0px_#0a0a0a] transition-all duration-150 group-hover:shadow-[6px_6px_0px_0px_#0a0a0a] group-hover:-translate-x-[1px] group-hover:-translate-y-[1px] overflow-hidden">
+      <div className="bg-[var(--surface)] border-2 border-[#1D3557] rounded-md shadow-[4px_4px_0px_0px_#1D3557] transition-all duration-150 group-hover:shadow-[6px_6px_0px_0px_#1D3557] group-hover:-translate-x-[1px] group-hover:-translate-y-[1px] overflow-hidden">
         {/* Image */}
-        <div className="relative aspect-[4/3] bg-[#e8e8e8] overflow-hidden border-b-2 border-[#0a0a0a]">
+        <div className="relative aspect-[4/3] bg-[var(--surface-alt)] overflow-hidden border-b-2 border-[#1D3557]">
           {listing.images[0] ? (
             <img
               src={listing.images[0]}
@@ -52,29 +53,29 @@ export default function ListingCard({ listing }: { listing: Listing }) {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[#f5c518]">
-              <span className="text-4xl">📦</span>
+            <div className="w-full h-full flex items-center justify-center bg-[#F9C74F]">
+              <Package className="w-10 h-10 text-[#1D3557]" />
             </div>
           )}
 
           {/* Condition badge — top left */}
-          <span className={`absolute top-2 left-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] capitalize ${CONDITION_COLORS[listing.condition] || "bg-gray-300 text-[#0a0a0a]"}`}>
+          <span className={`absolute top-2 left-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#1D3557] capitalize ${CONDITION_COLORS[listing.condition] || "bg-[var(--surface-soft)] text-[#1D3557]"}`}>
             {conditionLabel}
           </span>
 
           {/* Right badges */}
           {listing.auctionMode && (
-            <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] bg-[#f5c518] text-[#0a0a0a]">
-              🔨 AUCTION
+            <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#1D3557] bg-[#F9C74F] text-[#1D3557]">
+              <span className="inline-flex items-center gap-1"><Gavel className="w-3 h-3" />AUCTION</span>
             </span>
           )}
           {!listing.auctionMode && listing.shouldSuggestAuction && (
-            <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] bg-orange-400 text-white">
-              🔥 HOT
+            <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#E63946] bg-[#E63946]/20 text-[#1D3557]">
+              <span className="inline-flex items-center gap-1"><Flame className="w-3 h-3" />HOT</span>
             </span>
           )}
           {isRent && (
-            <span className="absolute bottom-2 left-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] bg-purple-400 text-white">
+            <span className="absolute bottom-2 left-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#1D3557] bg-[#A8DADC] text-[#1D3557]">
               RENT
             </span>
           )}
@@ -82,19 +83,19 @@ export default function ListingCard({ listing }: { listing: Listing }) {
 
         {/* Details */}
         <div className="p-3 space-y-1">
-          <h3 className="font-black text-sm leading-tight line-clamp-2 text-[#0a0a0a] group-hover:text-[#0a1628]">
+          <h3 className="font-black text-sm leading-tight line-clamp-2 text-[#1D3557] group-hover:text-[#1D3557]">
             {listing.title}
           </h3>
           <div className="flex items-center justify-between">
-            <span className="text-base font-black text-[#0a1628]">
+            <span className="text-base font-black text-[#1D3557]">
               ₹{listing.price.toLocaleString("en-IN")}
             </span>
-            <span className="text-[10px] text-[#888] font-medium">{timeAgo}</span>
+            <span className="text-[10px] text-[#1D3557] font-medium">{timeAgo}</span>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#555]">
+          <div className="flex items-center justify-between text-[10px] text-[#1D3557]">
             <span className="truncate font-medium">{listing.seller.displayName}</span>
             {listing.seller.hostelBlock && (
-              <span className="border border-[#0a0a0a] rounded-sm px-1 py-0.5 font-bold bg-[#e8e8e8] shrink-0">
+              <span className="border border-[#1D3557] rounded-sm px-1 py-0.5 font-bold bg-[var(--surface-alt)] shrink-0">
                 {listing.seller.hostelBlock}
               </span>
             )}
@@ -113,3 +114,4 @@ function getTimeAgo(dateStr: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
 }
+

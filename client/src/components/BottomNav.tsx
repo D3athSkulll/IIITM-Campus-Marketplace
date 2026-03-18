@@ -30,7 +30,7 @@ export default function BottomNav() {
   }
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-[#0a0a0a] safe-area-bottom shadow-[0px_-4px_0px_0px_#0a0a0a]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--surface-soft)] border-t-2 border-[#1D3557] safe-area-bottom shadow-[0px_-4px_0px_0px_#1D3557]">
       <div className="flex items-stretch h-14">
         {items.map((item, idx) => {
           const isActive =
@@ -42,10 +42,10 @@ export default function BottomNav() {
               href={item.href}
               className={`flex flex-col items-center justify-center flex-1 gap-0.5 transition-colors
                 ${isActive
-                  ? "bg-[#f5c518] text-[#0a0a0a]"
-                  : "text-[#555] hover:bg-[#f5f5f5]"
+                  ? "bg-[var(--surface-alt)] text-[#1D3557]"
+                  : "text-[#1D3557] hover:bg-[var(--surface)]"
                 }
-                ${idx < items.length - 1 ? "border-r-2 border-[#0a0a0a]" : ""}
+                ${idx < items.length - 1 ? "border-r-2 border-[#1D3557]" : ""}
               `}
             >
               <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5px]" : ""}`} />
@@ -59,3 +59,4 @@ export default function BottomNav() {
     </nav>
   );
 }
+
