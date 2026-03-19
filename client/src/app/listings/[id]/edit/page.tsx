@@ -32,16 +32,40 @@ const CATEGORIES = [
   "other",
 ];
 const CONDITIONS = [
-  { value: "like-new", label: "Like New", desc: "Barely used, no defects" },
-  { value: "good", label: "Good", desc: "Minor signs of use" },
-  { value: "fair", label: "Fair", desc: "Noticeable wear, fully functional" },
-  { value: "poor", label: "Poor", desc: "Heavy wear or minor defects" },
+  {
+    value: "like-new",
+    label: "Like New",
+    desc: "Barely used, no defects",
+    color: "bg-[#A8DADC] border-[#1D3557] text-[#1D3557]",
+    dot: "bg-[#A8DADC]",
+  },
+  {
+    value: "good",
+    label: "Good",
+    desc: "Minor signs of use",
+    color: "bg-[#D8E2DC] border-[#1D3557] text-[#1D3557]",
+    dot: "bg-[#D8E2DC]",
+  },
+  {
+    value: "fair",
+    label: "Fair",
+    desc: "Noticeable wear, fully functional",
+    color: "bg-[#F9C74F] border-[#1D3557] text-[#1D3557]",
+    dot: "bg-[#F9C74F]",
+  },
+  {
+    value: "poor",
+    label: "Poor",
+    desc: "Heavy wear or minor defects",
+    color: "bg-[#E63946] border-[#1D3557] text-[#F1FAEE]",
+    dot: "bg-[#E63946]",
+  },
 ];
 
 export default function EditListingPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,10 +81,8 @@ export default function EditListingPage() {
   const [status, setStatus] = useState("active");
 
   useEffect(() => {
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
+    if (isLoading) return;
+    if (!user) { router.replace("/login"); return; }
     const fetchListing = async () => {
       try {
         const data = await api<any>(`/listings/${id}`, { token });
@@ -86,7 +108,7 @@ export default function EditListingPage() {
       }
     };
     fetchListing();
-  }, [id, user]);
+  }, [id, user, isLoading]);
 
   const addImage = () => {
     if (images.length < 5) setImages([...images, ""]);
@@ -182,13 +204,13 @@ export default function EditListingPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-[var(--navy)]">Edit Listing</CardTitle>
+            <CardTitle className="text-[#1D3557]">Edit Listing</CardTitle>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleDelete}
               disabled={deleting}
-              className="text-destructive hover:text-destructive hover:bg-red-50 gap-1.5"
+              className="text-destructive hover:text-destructive hover:bg-[#D8E2DC] gap-1.5"
             >
               <Trash2 className="w-4 h-4" />
               {deleting ? "Deleting..." : "Delete"}
@@ -255,7 +277,7 @@ export default function EditListingPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="price">
-                    Price (&#8377;) <span className="text-destructive">*</span>
+                    Price (₹) <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="price"
@@ -282,16 +304,31 @@ export default function EditListingPage() {
                   {CONDITIONS.map((c) => (
                     <div
                       key={c.value}
-                      className="flex items-start gap-2 rounded-lg border p-3 cursor-pointer transition-colors has-[:checked]:border-[var(--navy)] has-[:checked]:bg-blue-50"
+                      onClick={() => setCondition(c.value)}
+                      className={`flex items-start gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all shadow-[2px_2px_0px_0px_#1D3557]
+                        ${condition === c.value
+                          ? `${c.color} border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557]`
+                          : "bg-[var(--surface)] border-[#1D3557] hover:bg-[#D8E2DC]"
+                        }`}
                     >
                       <RadioGroupItem
                         value={c.value}
                         id={`cond-${c.value}`}
-                        className="mt-0.5"
+                        className="sr-only"
                       />
                       <Label htmlFor={`cond-${c.value}`} className="cursor-pointer">
-                        <div className="font-medium text-sm">{c.label}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="font-medium text-sm flex items-center gap-1.5">
+                          <span className={`w-2.5 h-2.5 rounded-full border border-[#1D3557] ${c.dot}`} />
+                          {c.label}
+                          {condition === c.value && (
+                            <span className="ml-1 text-[9px] font-black uppercase tracking-wide">Selected</span>
+                          )}
+                        </div>
+                        <div className={`text-xs ${
+                          condition === c.value
+                            ? (c.value === "poor" ? "text-[#F1FAEE]/90" : "text-[#1D3557]/85")
+                            : "text-[#1D3557]/80"
+                        }`}>
                           {c.desc}
                         </div>
                       </Label>
@@ -364,7 +401,7 @@ export default function EditListingPage() {
               <Button
                 type="submit"
                 disabled={saving}
-                className="w-full bg-[var(--navy)] hover:bg-[var(--navy-dark)] text-white font-semibold py-5"
+                className="w-full bg-[var(--navy)] hover:bg-[var(--navy-light)] text-[#F1FAEE] font-black py-5"
               >
                 {saving ? "Saving..." : "Save Changes"}
               </Button>

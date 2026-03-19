@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -10,20 +10,20 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, X, Tag, Calendar, Camera, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, X, Tag, Calendar, Camera, Loader2, Package, Repeat2 } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = ["books", "electronics", "clothing", "furniture", "stationery", "sports", "accessories", "other"];
 const CONDITIONS = [
-  { value: "like-new", label: "Like New", desc: "Barely used", color: "bg-green-100 border-green-600 text-green-800" },
-  { value: "good", label: "Good", desc: "Minor wear", color: "bg-blue-100 border-blue-600 text-blue-800" },
-  { value: "fair", label: "Fair", desc: "Noticeable wear", color: "bg-yellow-100 border-yellow-600 text-yellow-800" },
-  { value: "poor", label: "Poor", desc: "Heavy wear", color: "bg-red-100 border-red-600 text-red-800" },
+  { value: "like-new", label: "Like New", desc: "Barely used", color: "bg-[#A8DADC] border-[#1D3557] text-[#1D3557]", dot: "bg-[#A8DADC]" },
+  { value: "good", label: "Good", desc: "Minor wear", color: "bg-[#D8E2DC] border-[#1D3557] text-[#1D3557]", dot: "bg-[#D8E2DC]" },
+  { value: "fair", label: "Fair", desc: "Noticeable wear", color: "bg-[#F9C74F] border-[#1D3557] text-[#1D3557]", dot: "bg-[#F9C74F]" },
+  { value: "poor", label: "Poor", desc: "Heavy wear", color: "bg-[#E63946] border-[#1D3557] text-[#F1FAEE]", dot: "bg-[#E63946]" },
 ];
 
 export default function NewListingPage() {
   const router = useRouter();
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
 
@@ -44,10 +44,13 @@ export default function NewListingPage() {
   // One hidden file input per image slot
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  if (!user) {
-    router.replace("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login");
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user) return null;
 
   const addImage = () => { if (images.length < 5) setImages([...images, ""]); };
   const removeImage = (idx: number) => { setImages(images.filter((_, i) => i !== idx)); };
@@ -111,10 +114,10 @@ export default function NewListingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-transparent">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <Link href="/" className="inline-flex items-center gap-1 text-sm font-bold text-[#555] hover:text-[#0a0a0a] mb-5">
+        <Link href="/" className="inline-flex items-center gap-1 text-sm font-bold text-[#1D3557] hover:text-[#1D3557] mb-5">
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
 
@@ -128,22 +131,25 @@ export default function NewListingPage() {
               <CardTitle className="text-sm flex items-center gap-2"><Tag className="w-4 h-4" /> Listing Type</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex border-2 border-[#0a0a0a] rounded-md overflow-hidden w-fit shadow-[3px_3px_0px_0px_#0a0a0a]">
+              <div className="flex border-2 border-[#1D3557] rounded-md overflow-hidden w-fit shadow-[3px_3px_0px_0px_#1D3557]">
                 {(["sell", "rent"] as const).map((t, idx) => (
                   <button
                     key={t}
                     type="button"
                     onClick={() => setListingType(t)}
                     aria-label={t === "sell" ? "Sell item" : "Rent out item"}
-                    className={`px-6 py-2 text-sm font-black transition-colors ${idx > 0 ? "border-l-2 border-[#0a0a0a]" : ""}
-                      ${listingType === t ? "bg-[#f5c518] text-[#0a0a0a]" : "bg-white text-[#555] hover:bg-[#f5f5f5]"}`}
+                    className={`px-6 py-2 text-sm font-black transition-colors ${idx > 0 ? "border-l-2 border-[#1D3557]" : ""}
+                      ${listingType === t ? "bg-[#F9C74F] text-[#1D3557]" : "bg-[var(--surface)] text-[#1D3557] hover:bg-[#F9C74F]"}`}
                   >
-                    {t === "sell" ? "📦 Sell" : "🔄 Rent Out"}
+                    <span className="inline-flex items-center gap-1.5">
+                      {t === "sell" ? <Package className="w-3.5 h-3.5" /> : <Repeat2 className="w-3.5 h-3.5" />}
+                      {t === "sell" ? "Sell" : "Rent Out"}
+                    </span>
                   </button>
                 ))}
               </div>
               {listingType === "rent" && (
-                <p className="text-xs font-medium text-[#555] mt-2">
+                <p className="text-xs font-medium text-[#1D3557] mt-2">
                   Rental listings show a purple RENT badge and include per-day pricing + deposit info.
                 </p>
               )}
@@ -166,7 +172,7 @@ export default function NewListingPage() {
                   required
                   maxLength={120}
                 />
-                <p className="text-xs text-[#888] text-right">{title.length}/120</p>
+                <p className="text-xs text-[#1D3557] text-right">{title.length}/120</p>
               </div>
 
               <div className="space-y-1">
@@ -179,9 +185,9 @@ export default function NewListingPage() {
                   required
                   maxLength={2000}
                   rows={4}
-                  className="w-full px-3 py-2 rounded-md border-2 border-[#0a0a0a] text-sm resize-none focus:outline-none focus:shadow-none shadow-[3px_3px_0px_0px_#0a0a0a] focus:translate-x-[3px] focus:translate-y-[3px] transition-all bg-white font-medium"
+                  className="w-full px-3 py-2 rounded-md border-2 border-[#1D3557] text-sm resize-none focus:outline-none focus:shadow-none shadow-[3px_3px_0px_0px_#1D3557] focus:translate-x-[3px] focus:translate-y-[3px] transition-all bg-[var(--surface-alt)] font-medium"
                 />
-                <p className="text-xs text-[#888] text-right">{description.length}/2000</p>
+                <p className="text-xs text-[#1D3557] text-right">{description.length}/2000</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -193,7 +199,7 @@ export default function NewListingPage() {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-md border-2 border-[#0a0a0a] text-sm shadow-[3px_3px_0px_0px_#0a0a0a] focus:outline-none focus:translate-x-[3px] focus:translate-y-[3px] focus:shadow-none transition-all bg-white font-bold capitalize appearance-none"
+                    className="w-full px-3 py-2 rounded-md border-2 border-[#1D3557] text-sm shadow-[3px_3px_0px_0px_#1D3557] focus:outline-none focus:translate-x-[3px] focus:translate-y-[3px] focus:shadow-none transition-all bg-[var(--surface-alt)] font-bold capitalize appearance-none"
                   >
                     <option value="">Select…</option>
                     {CATEGORIES.map((c) => (
@@ -221,9 +227,9 @@ export default function NewListingPage() {
 
           {/* Rental Details */}
           {listingType === "rent" && (
-            <Card className="border-purple-500 shadow-[4px_4px_0px_0px_#7c3aed]">
+            <Card className="border-[#2A9D8F] shadow-[4px_4px_0px_0px_#2A9D8F]">
               <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2 text-purple-700">
+                <CardTitle className="text-sm flex items-center gap-2 text-[#1D3557]">
                   <Calendar className="w-4 h-4" /> Rental Details
                 </CardTitle>
               </CardHeader>
@@ -290,15 +296,20 @@ export default function NewListingPage() {
                     key={c.value}
                     type="button"
                     aria-label={`Condition: ${c.label} — ${c.desc}`}
-                    aria-pressed={condition === c.value}
                     onClick={() => setCondition(c.value)}
                     className={`flex flex-col items-start p-3 rounded-md border-2 transition-all text-left
                       ${condition === c.value
-                        ? `${c.color} border-current shadow-[3px_3px_0px_0px_#0a0a0a] font-black`
-                        : "bg-white border-[#0a0a0a] hover:bg-[#f5f5f5] shadow-[2px_2px_0px_0px_#0a0a0a]"
+                        ? `${c.color} border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557] font-black`
+                        : "bg-[var(--surface)] border-[#1D3557] hover:bg-[#D8E2DC] shadow-[2px_2px_0px_0px_#1D3557]"
                       }`}
                   >
-                    <span className="text-xs font-black">{c.label}</span>
+                    <div className="w-full flex items-center gap-1.5">
+                      <span className={`w-2.5 h-2.5 rounded-full border border-[#1D3557] ${c.dot}`} />
+                      <span className="text-xs font-black">{c.label}</span>
+                      {condition === c.value && (
+                        <span className="ml-auto text-[9px] font-black uppercase tracking-wide">Selected</span>
+                      )}
+                    </div>
                     <span className="text-[10px] font-medium text-current opacity-70">{c.desc}</span>
                   </button>
                 ))}
@@ -310,7 +321,7 @@ export default function NewListingPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">
-                Photos * <span className="text-[#888] font-normal">(1–5, max 2 MB each)</span>
+                Photos * <span className="text-[#1D3557] font-normal">(1–5, max 2 MB each)</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -318,11 +329,11 @@ export default function NewListingPage() {
                 <div key={idx} className="space-y-2">
                   <div className="flex gap-2 items-start">
                     {/* Preview thumbnail */}
-                    <div className="shrink-0 w-12 h-12 rounded-md border-2 border-[#0a0a0a] overflow-hidden bg-[#f5f5f5] flex items-center justify-center">
+                    <div className="shrink-0 w-12 h-12 rounded-md border-2 border-[#1D3557] overflow-hidden bg-[var(--surface-alt)] flex items-center justify-center">
                       {img ? (
                         <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-[#aaa] text-xs font-bold">{idx + 1}</span>
+                        <span className="text-[#1D3557] text-xs font-bold">{idx + 1}</span>
                       )}
                     </div>
 
@@ -343,7 +354,6 @@ export default function NewListingPage() {
                           ref={(el) => { fileInputRefs.current[idx] = el; }}
                           type="file"
                           accept="image/*"
-                          capture="environment"
                           className="sr-only"
                           aria-label={`Take or choose photo ${idx + 1}`}
                           onChange={(e) => {
@@ -358,7 +368,7 @@ export default function NewListingPage() {
                           aria-label={`Take or choose photo ${idx + 1}`}
                           onClick={() => fileInputRefs.current[idx]?.click()}
                           disabled={uploadingIdx === idx}
-                          className="w-9 h-9 flex items-center justify-center border-2 border-[#0a0a0a] rounded-md bg-white hover:bg-[#f5c518] shadow-[2px_2px_0px_0px_#0a0a0a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-50"
+                          className="w-9 h-9 flex items-center justify-center border-2 border-[#1D3557] rounded-md bg-[var(--surface-alt)] hover:bg-[#F9C74F] shadow-[2px_2px_0px_0px_#1D3557] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-50"
                         >
                           {uploadingIdx === idx
                             ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -374,9 +384,9 @@ export default function NewListingPage() {
                           title={`Remove image ${idx + 1}`}
                           aria-label={`Remove image ${idx + 1}`}
                           onClick={() => removeImage(idx)}
-                          className="w-9 h-9 flex items-center justify-center border-2 border-[#0a0a0a] rounded-md bg-white hover:bg-red-50 shadow-[2px_2px_0px_0px_#0a0a0a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+                          className="w-9 h-9 flex items-center justify-center border-2 border-[#1D3557] rounded-md bg-[var(--surface-alt)] hover:bg-[#D8E2DC] shadow-[2px_2px_0px_0px_#1D3557] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
                         >
-                          <X className="w-4 h-4 text-red-600" />
+                          <X className="w-4 h-4 text-[#1D3557]" />
                         </button>
                       )}
                     </div>
@@ -390,9 +400,9 @@ export default function NewListingPage() {
                 </Button>
               )}
 
-              <div className="flex items-start gap-2 p-2 border border-[#e0e0e0] rounded-md bg-[#f9f9f9]">
-                <Camera className="w-3.5 h-3.5 text-[#888] mt-0.5 shrink-0" />
-                <p className="text-[10px] text-[#666] font-medium">
+              <div className="flex items-start gap-2 p-2 border-2 border-[#1D3557] rounded-md bg-[#F1FAEE]">
+                <Camera className="w-3.5 h-3.5 text-[#1D3557] mt-0.5 shrink-0" />
+                <p className="text-[10px] text-[#1D3557] font-medium">
                   Tap the camera icon to take a photo or pick from your gallery. On desktop, it opens your file browser.
                   Images are uploaded to free hosting (ImgBB). Max 2 MB per photo. Or paste any public image URL directly.
                 </p>
@@ -403,7 +413,7 @@ export default function NewListingPage() {
           {/* Price reference */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Price Reference <span className="text-[#888] font-normal">(optional)</span></CardTitle>
+              <CardTitle className="text-sm">Price Reference <span className="text-[#1D3557] font-normal">(optional)</span></CardTitle>
             </CardHeader>
             <CardContent>
               <Input
@@ -413,7 +423,7 @@ export default function NewListingPage() {
                 onChange={(e) => setPriceReferenceLink(e.target.value)}
                 aria-label="Price reference link"
               />
-              <p className="text-xs text-[#888] font-medium mt-1">Helps buyers verify your price is fair.</p>
+              <p className="text-xs text-[#1D3557] font-medium mt-1">Helps buyers verify your price is fair.</p>
             </CardContent>
           </Card>
 
@@ -429,3 +439,4 @@ export default function NewListingPage() {
     </div>
   );
 }
+
