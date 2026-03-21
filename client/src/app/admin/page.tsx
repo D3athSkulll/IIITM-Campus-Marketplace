@@ -27,7 +27,7 @@ import Link from "next/link";
 type Tab = "overview" | "users" | "disputes" | "flagged";
 
 export default function AdminDashboard() {
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const router = useRouter();
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -38,12 +38,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
+    if (isLoading) return;
+    if (!user) { router.replace("/login"); return; }
     fetchStats();
-  }, [user]);
+  }, [user, isLoading]);
 
   useEffect(() => {
     if (tab === "users" && users.length === 0) fetchUsers();
@@ -128,14 +126,14 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-transparent">
         <Navbar />
         <div className="max-w-5xl mx-auto px-4 py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-28 bg-muted rounded-xl animate-pulse"
+                className="h-28 section-surface rounded-xl animate-pulse"
               />
             ))}
           </div>
@@ -164,17 +162,21 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       <Navbar />
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center gap-3">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1 text-[#1D3557] border-2 border-[#1D3557] bg-[var(--surface-alt)] hover:bg-[#F9C74F]"
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--navy)]">
+            <h1 className="text-2xl font-bold text-[#1D3557]">
               Admin Dashboard
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -184,15 +186,15 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-muted p-1 rounded-lg overflow-x-auto">
+        <div className="flex gap-1 bg-[var(--surface-soft)] border-2 border-[#1D3557] p-1.5 rounded-lg overflow-x-auto">
           {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
                 tab === t.key
-                  ? "bg-white shadow-sm text-[var(--navy)]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-[var(--hero-panel)] border-2 border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557] text-[#1D3557]"
+                  : "text-[var(--text-soft)] hover:text-[#1D3557] hover:bg-[#F1FAEE]/45"
               }`}
             >
               {t.icon}
@@ -209,38 +211,38 @@ export default function AdminDashboard() {
                 icon={<Users className="w-5 h-5" />}
                 label="Total Users"
                 value={stats.totalUsers}
-                color="bg-blue-50 text-blue-600"
+                color="bg-[#A8DADC] text-[#1D3557]"
               />
               <StatCard
                 icon={<ShoppingBag className="w-5 h-5" />}
                 label="Total Listings"
                 value={stats.totalListings}
-                color="bg-green-50 text-green-600"
+                color="bg-[#D8E2DC] text-[#1D3557]"
               />
               <StatCard
                 icon={<Package className="w-5 h-5" />}
                 label="Active Listings"
                 value={stats.activeListings}
-                color="bg-amber-50 text-amber-600"
+                color="bg-[#F1FAEE] text-[#1D3557]"
               />
               <StatCard
                 icon={<Gavel className="w-5 h-5" />}
                 label="Transactions"
                 value={stats.totalTransactions}
-                color="bg-purple-50 text-purple-600"
+                color="bg-[#A8DADC] text-[#1D3557]"
               />
             </div>
 
             {stats.disputedTransactions > 0 && (
-              <Card className="border-red-200 bg-red-50">
+              <Card className="border-[#D8E2DC] bg-[#D8E2DC]/15 shadow-[4px_4px_0px_0px_#D8E2DC]">
                 <CardContent className="p-4 flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+                  <AlertTriangle className="w-5 h-5 text-[#1D3557] shrink-0" />
                   <div className="flex-1">
-                    <div className="font-semibold text-red-800 text-sm">
+                    <div className="font-semibold text-[#1D3557] text-sm">
                       {stats.disputedTransactions} active dispute
                       {stats.disputedTransactions !== 1 ? "s" : ""}
                     </div>
-                    <p className="text-xs text-red-600">
+                    <p className="text-xs text-[#1D3557]">
                       Requires your attention
                     </p>
                   </div>
@@ -248,7 +250,7 @@ export default function AdminDashboard() {
                     size="sm"
                     variant="outline"
                     onClick={() => setTab("disputes")}
-                    className="border-red-300 text-red-700 hover:bg-red-100"
+                    className="border-[#1D3557] bg-[var(--surface-alt)] text-[#1D3557] hover:bg-[#F9C74F]"
                   >
                     Review
                   </Button>
@@ -265,9 +267,12 @@ export default function AdminDashboard() {
               {users.length} registered user{users.length !== 1 ? "s" : ""}
             </p>
             {users.map((u) => (
-              <Card key={u._id} className="hover:shadow-sm transition-shadow">
+              <Card
+                key={u._id}
+                className="hover:shadow-[4px_4px_0px_0px_#1D3557] hover:-translate-y-0.5 transition-all"
+              >
                 <CardContent className="p-3 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[var(--navy)] flex items-center justify-center text-white font-bold text-sm shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-[#A8DADC] border-2 border-[#1D3557] flex items-center justify-center text-[#1D3557] font-bold text-sm shrink-0">
                     {(u.realName || u.anonymousNickname || "?")
                       .charAt(0)
                       .toUpperCase()}
@@ -282,15 +287,15 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {u.hostelBlock && (
-                      <span className="text-xs bg-muted px-2 py-0.5 rounded hidden sm:inline">
+                      <span className="text-xs bg-[var(--surface-alt)] border border-[#1D3557] px-2 py-0.5 rounded hidden sm:inline">
                         {u.hostelBlock}
                       </span>
                     )}
                     <Badge
                       className={
                         u.role === "admin"
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-[#A8DADC] text-[#1D3557]"
+                          : "bg-[var(--surface-alt)] text-[#1D3557] border border-[#1D3557]"
                       }
                     >
                       {u.role}
@@ -300,7 +305,7 @@ export default function AdminDashboard() {
                         variant="outline"
                         size="sm"
                         onClick={() => toggleRole(u._id, u.role)}
-                        className="text-xs h-7"
+                        className="text-xs h-7 border-[#1D3557] bg-[var(--surface-alt)] hover:bg-[#F9C74F]"
                       >
                         {u.role === "admin" ? "Demote" : "Promote"}
                       </Button>
@@ -322,24 +327,27 @@ export default function AdminDashboard() {
               </div>
             ) : (
               disputes.map((d) => (
-                <Card key={d._id} className="border-amber-200">
+                <Card
+                  key={d._id}
+                  className="border-[#F1FAEE] shadow-[4px_4px_0px_0px_#F1FAEE]"
+                >
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="font-semibold text-sm">
                           {d.listing?.title || "Unknown listing"}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
+                        <div className="text-xs text-[var(--text-soft)] mt-0.5">
                           Buyer: {d.buyer?.displayName || d.buyer?.realName} |
                           Seller: {d.seller?.displayName || d.seller?.realName}
                         </div>
                         {d.listing?.price && (
-                          <div className="text-sm font-bold text-[var(--navy)] mt-1">
-                            &#8377;{d.listing.price.toLocaleString()}
+                          <div className="text-sm font-bold text-[#1D3557] mt-1">
+                            ₹{d.listing.price.toLocaleString()}
                           </div>
                         )}
                       </div>
-                      <Badge className="bg-red-100 text-red-700 shrink-0">
+                      <Badge className="bg-[#D8E2DC] text-[#1D3557] shrink-0">
                         Disputed
                       </Badge>
                     </div>
@@ -348,14 +356,15 @@ export default function AdminDashboard() {
                       <Button
                         size="sm"
                         onClick={() => resolveDispute(d._id, "refunded")}
-                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-white gap-1"
+                        className="flex-1 bg-[#D8E2DC] hover:bg-[#F9C74F] text-[#1D3557] gap-1"
                       >
+                        <XCircle className="w-3.5 h-3.5" />
                         Refund
                       </Button>
                       <Button
                         size="sm"
                         onClick={() => resolveDispute(d._id, "completed")}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1"
+                        className="flex-1 bg-[#D8E2DC] hover:bg-[#A8DADC] text-[#1D3557] gap-1"
                       >
                         <CheckCircle className="w-3.5 h-3.5" /> Complete
                       </Button>
@@ -363,7 +372,7 @@ export default function AdminDashboard() {
                         size="sm"
                         variant="outline"
                         onClick={() => resolveDispute(d._id, "cancelled")}
-                        className="flex-1 text-red-600 border-red-300 hover:bg-red-50 gap-1"
+                        className="flex-1 text-[#1D3557] border-[#1D3557] bg-[var(--surface-alt)] hover:bg-[#F9C74F] gap-1"
                       >
                         <XCircle className="w-3.5 h-3.5" /> Cancel
                       </Button>
@@ -385,9 +394,12 @@ export default function AdminDashboard() {
               </div>
             ) : (
               flagged.map((l) => (
-                <Card key={l._id}>
+                <Card
+                  key={l._id}
+                  className="hover:shadow-[4px_4px_0px_0px_#1D3557] transition-all"
+                >
                   <CardContent className="p-3 flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted shrink-0">
+                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-[var(--surface-alt)] border-2 border-[#1D3557] shrink-0">
                       {l.images?.[0] ? (
                         <img
                           src={l.images[0]}
@@ -396,7 +408,7 @@ export default function AdminDashboard() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 text-xl">
-                          📦
+                          <Package className="w-5 h-5" />
                         </div>
                       )}
                     </div>
@@ -408,7 +420,7 @@ export default function AdminDashboard() {
                         by {l.seller?.displayName || l.seller?.realName}
                       </div>
                     </div>
-                    <Badge className="bg-red-100 text-red-700 shrink-0">
+                    <Badge className="bg-[#D8E2DC] text-[#1D3557] shrink-0">
                       Removed
                     </Badge>
                   </CardContent>
@@ -434,7 +446,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <Card>
+    <Card className="hover:shadow-[4px_4px_0px_0px_#1D3557] transition-all">
       <CardContent className="p-4">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${color}`}>
           {icon}
