@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { useSocket } from "@/context/SocketContext";
 import { api } from "@/lib/api";
 import { uploadImage } from "@/lib/uploadImage";
 import Navbar from "@/components/Navbar";
@@ -17,7 +18,8 @@ import {
 export default function ChatPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { user, token } = useAuth();
+  const { user, token, isLoading: authLoading } = useRequireAuth();
+  const { socket } = useSocket();
 
   const [chat, setChat] = useState<any>(null);
   const [role, setRole] = useState<"buyer" | "seller">("buyer");
@@ -32,26 +34,78 @@ export default function ChatPage() {
   const [showInfoBanner, setShowInfoBanner] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  // Prevent duplicate fetches when socket fires while a fetch is in-flight
+  const fetchingRef = useRef(false);
 
-  const fetchChat = async () => {
+  const fetchChat = useCallback(async () => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     try {
       const data = await api<any>(`/chats/${id}`, { token });
       setChat(data.chat);
       setRole(data.role);
       setQuickReplies(data.quickReplies || []);
+
+      if (data.chat?.negotiation?.outcome === "accepted") {
+        try {
+          const txData = await api<any>(`/transactions/by-chat/${id}`, { token });
+          setTransactionId(txData.transaction?._id || null);
+        } catch {
+          setTransactionId(null);
+        }
+      } else {
+        setTransactionId(null);
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to load chat");
       router.push("/chats");
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, [id, token, router]);
 
+  // Initial load — wait for auth first
   useEffect(() => {
-    if (!user) { router.replace("/login"); return; }
+    if (authLoading || !user || !token) return;
     fetchChat();
-  }, [id, user]);
+  }, [authLoading, user, token, fetchChat]);
 
+  // ── Socket: join room & listen for real-time updates ───────────────────────
+  useEffect(() => {
+    if (!socket || !id) return;
+
+    socket.emit("join-chat", id);
+
+    const handleUpdate = (payload: { type: string; message?: any }) => {
+      if (payload.type === "message" && payload.message) {
+        // Optimistically append the new message without a full refetch
+        setChat((prev: any) => {
+          if (!prev) return prev;
+          // Avoid duplicates (our own sent message is already there after sendMessage)
+          const exists = prev.messages.some((m: any) => m._id === payload.message._id);
+          if (exists) return prev;
+          return {
+            ...prev,
+            messages: [...prev.messages, payload.message],
+            lastMessageAt: payload.message.createdAt,
+          };
+        });
+      } else {
+        // Negotiation state change — full refetch is safest
+        fetchChat();
+      }
+    };
+
+    socket.on("chat:updated", handleUpdate);
+
+    return () => {
+      socket.emit("leave-chat", id);
+      socket.off("chat:updated", handleUpdate);
+    };
+  }, [socket, id, fetchChat]);
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chat?.messages]);
@@ -62,6 +116,7 @@ export default function ChatPage() {
     try {
       await api<any>(`/chats/${id}/message`, { method: "POST", body: { content, type }, token });
       setText("");
+      // Fetch to sync our own message (socket already pushes it to the other party)
       await fetchChat();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to send");
@@ -77,7 +132,7 @@ export default function ChatPage() {
       const url = await uploadImage(file, token);
       await api<any>(`/chats/${id}/message`, {
         method: "POST",
-        body: { content: "📷 Photo", type: "image", imageUrl: url },
+        body: { content: "Photo", type: "image", imageUrl: url },
         token,
       });
       await fetchChat();
@@ -120,7 +175,7 @@ export default function ChatPage() {
   const respondToOffer = async (accepted: boolean) => {
     try {
       await api<any>(`/chats/${id}/respond`, { method: "POST", body: { accepted }, token });
-      if (accepted) toast.success("Deal accepted! 🎉");
+      if (accepted) toast.success("Deal accepted.");
       await fetchChat();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to respond");
@@ -138,13 +193,14 @@ export default function ChatPage() {
     }
   };
 
-  if (loading) {
+  // Show skeleton while auth or chat is loading
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#fafafa]">
+      <div className="min-h-screen bg-transparent">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
-          <div className="h-12 bg-[#e8e8e8] rounded-md animate-shimmer border-2 border-[#0a0a0a]" />
-          <div className="h-96 bg-[#e8e8e8] rounded-md animate-shimmer border-2 border-[#0a0a0a]" />
+          <div className="h-12 bg-[var(--surface-alt)] rounded-md animate-shimmer border-2 border-[#1D3557]" />
+          <div className="h-96 bg-[var(--surface-alt)] rounded-md animate-shimmer border-2 border-[#1D3557]" />
         </div>
       </div>
     );
@@ -161,14 +217,12 @@ export default function ChatPage() {
   const listingPrice = chat.listing?.price;
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col">
+    <div className="min-h-screen bg-transparent flex flex-col">
       <Navbar />
-      {/* Hidden camera/file input */}
       <input
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="sr-only"
         aria-label="Take or choose a photo to send"
         onChange={(e) => {
@@ -181,13 +235,13 @@ export default function ChatPage() {
       <div className="flex-1 max-w-2xl w-full mx-auto px-4 py-4 flex flex-col gap-3">
 
         {/* Header */}
-        <div className="flex items-center gap-3 bg-white border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a]">
+        <div className="flex items-center gap-3 bg-[var(--surface)] border-2 border-[#1D3557] rounded-md p-3 shadow-[3px_3px_0px_0px_#1D3557]">
           <Link href="/chats">
             <Button type="button" variant="outline" size="icon-sm" aria-label="Back to chats">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <div className="w-9 h-9 rounded-md bg-[#f5c518] border-2 border-[#0a0a0a] overflow-hidden shrink-0">
+          <div className="w-9 h-9 rounded-md bg-[#F9C74F] border-2 border-[#1D3557] overflow-hidden shrink-0">
             {other.avatarUrl
               ? <img src={other.avatarUrl} alt={other.displayName} className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center font-black text-sm">{other.displayName[0]?.toUpperCase()}</div>
@@ -195,12 +249,12 @@ export default function ChatPage() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-black text-sm truncate">{other.displayName}</div>
-            <div className="text-xs text-[#555] font-medium truncate">{chat.listing?.title}</div>
+            <div className="text-xs text-[#1D3557] font-medium truncate">{chat.listing?.title}</div>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-sm font-black text-[#0a1628]">₹{listingPrice?.toLocaleString("en-IN")}</div>
+            <div className="text-sm font-black text-[#1D3557]">₹{listingPrice?.toLocaleString("en-IN")}</div>
             {chat.mode === "negotiation" && (
-              <span className="text-[10px] font-black bg-[#f5c518] border border-[#0a0a0a] px-1.5 py-0.5 rounded-sm">
+              <span className="text-[10px] font-black bg-[#F9C74F] border border-[#1D3557] px-1.5 py-0.5 rounded-sm">
                 NEGOTIATING
               </span>
             )}
@@ -209,7 +263,7 @@ export default function ChatPage() {
 
         {/* Info banner */}
         {showInfoBanner && (
-          <div className="flex items-start gap-2 bg-[#f5c518] border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a]">
+          <div className="flex items-start gap-2 bg-[#F9C74F] border-2 border-[#1D3557] rounded-md p-3 shadow-[3px_3px_0px_0px_#1D3557]">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <div className="flex-1 text-xs font-bold">
               <span className="font-black">You&apos;re chatting with the {role === "buyer" ? "seller" : "buyer"}.</span>{" "}
@@ -218,7 +272,7 @@ export default function ChatPage() {
                 : "Answer questions, share photos of the item, and respond to offers. Accepting an offer locks the deal."
               }
             </div>
-            <button type="button" aria-label="Dismiss info banner" onClick={() => setShowInfoBanner(false)} className="text-[#0a0a0a]/60 hover:text-[#0a0a0a] shrink-0">
+            <button type="button" aria-label="Dismiss info banner" onClick={() => setShowInfoBanner(false)} className="text-[#1D3557] hover:text-[#1D3557] shrink-0">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -226,15 +280,15 @@ export default function ChatPage() {
 
         {/* Negotiation status */}
         {chat.mode === "negotiation" && neg && (
-          <div className={`border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a] ${
-            neg.outcome === "accepted" ? "bg-green-400" :
-            neg.outcome === "rejected" ? "bg-red-400" : "bg-[#f5c518]"
+          <div className={`border-2 border-[#1D3557] rounded-md p-3 shadow-[3px_3px_0px_0px_#1D3557] ${
+            neg.outcome === "accepted" ? "bg-[#D8E2DC]" :
+            neg.outcome === "rejected" ? "bg-[#D8E2DC]" : "bg-[#F9C74F]"
           }`}>
             {neg.outcome === "accepted" ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 font-black">
                   <CheckCircle className="w-5 h-5" />
-                  Deal at ₹{neg.agreedPrice?.toLocaleString("en-IN")}! 🎉
+                  Deal at ₹{neg.agreedPrice?.toLocaleString("en-IN")}
                 </div>
                 <p className="text-xs font-bold">
                   {role === "buyer"
@@ -246,9 +300,14 @@ export default function ChatPage() {
                     <CreditCard className="w-3.5 h-3.5" /> Confirm &amp; Pay
                   </Button>
                 )}
+                {transactionId && (
+                  <Button type="button" size="sm" variant="outline" onClick={() => router.push(`/transactions/${transactionId}`)} className="gap-1.5 font-black">
+                    <CreditCard className="w-3.5 h-3.5" /> Open Transaction
+                  </Button>
+                )}
               </div>
             ) : neg.outcome === "rejected" ? (
-              <div className="flex items-center gap-2 font-black text-white">
+              <div className="flex items-center gap-2 font-black text-[#1D3557]">
                 <XCircle className="w-5 h-5" />
                 All 3 cards used — negotiation closed.
               </div>
@@ -260,7 +319,7 @@ export default function ChatPage() {
                 </div>
                 <div className="flex gap-1.5">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className={`flex-1 h-2.5 rounded-sm border border-[#0a0a0a] ${i < cardsRemaining ? "bg-[#0a1628]" : "bg-white/40"}`} />
+                    <div key={i} className={`flex-1 h-2.5 rounded-sm border border-[#1D3557] ${i < cardsRemaining ? "bg-[#A8DADC]" : "bg-[#F1FAEE]/60"}`} />
                   ))}
                 </div>
               </div>
@@ -276,7 +335,7 @@ export default function ChatPage() {
             if (isSystem) {
               return (
                 <div key={msg._id} className="flex justify-center">
-                  <span className="text-xs font-bold bg-[#e8e8e8] border border-[#0a0a0a] px-3 py-1 rounded-sm text-[#555]">
+                  <span className="text-xs font-bold bg-[var(--surface-alt)] border border-[#1D3557] px-3 py-1 rounded-sm text-[#1D3557]">
                     {msg.content}
                   </span>
                 </div>
@@ -285,15 +344,10 @@ export default function ChatPage() {
             if (msg.type === "image" && msg.imageUrl) {
               return (
                 <div key={msg._id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                  <div className={`rounded-md border-2 border-[#0a0a0a] overflow-hidden shadow-[2px_2px_0px_0px_#0a0a0a] max-w-[60%]`}>
-                    <img
-                      src={msg.imageUrl}
-                      alt="Shared photo"
-                      className="w-full max-h-48 object-cover"
-                      loading="lazy"
-                    />
-                    <div className={`text-[10px] font-bold px-2 py-1 ${isMe ? "bg-[#0a1628] text-white" : "bg-white text-[#555]"}`}>
-                      📷 Photo
+                  <div className="rounded-md border-2 border-[#1D3557] overflow-hidden shadow-[2px_2px_0px_0px_#1D3557] max-w-[60%]">
+                    <img src={msg.imageUrl} alt="Shared photo" className="w-full max-h-48 object-cover" loading="lazy" />
+                    <div className={`text-[10px] font-bold px-2 py-1 ${isMe ? "bg-[#2A9D8F] text-[#F1FAEE]" : "bg-[var(--surface-alt)] text-[#1D3557]"}`}>
+                      Photo
                     </div>
                   </div>
                 </div>
@@ -301,13 +355,13 @@ export default function ChatPage() {
             }
             return (
               <div key={msg._id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[75%] rounded-md px-3 py-2 text-sm font-medium border-2 border-[#0a0a0a]
+                <div className={`max-w-[75%] rounded-md px-3 py-2 text-sm font-medium border-2 border-[#1D3557]
                   [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap
                   ${msg.type === "offer"
-                    ? "bg-[#f5c518] text-[#0a0a0a] font-black"
+                    ? "bg-[#F9C74F] text-[#1D3557] font-black"
                     : isMe
-                      ? "bg-[#0a1628] text-white"
-                      : "bg-white text-[#0a0a0a]"
+                      ? "bg-[#2A9D8F] text-[#F1FAEE]"
+                      : "bg-[var(--surface)] text-[#1D3557]"
                   }`}
                 >
                   {msg.type === "offer" && <div className="text-[10px] font-black uppercase mb-0.5">Bargain Offer</div>}
@@ -321,18 +375,18 @@ export default function ChatPage() {
 
         {/* Seller: pending offer response */}
         {role === "seller" && isNegActive && hasPendingOffer && (
-          <div className="bg-[#f5c518] border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a] space-y-2">
+          <div className="bg-[#F9C74F] border-2 border-[#1D3557] rounded-md p-3 shadow-[3px_3px_0px_0px_#1D3557] space-y-2">
             <div className="text-sm font-black">
               Buyer offers ₹{lastOffer.amount.toLocaleString("en-IN")} (Card {lastOffer.round}/3)
             </div>
-            <p className="text-xs font-bold text-[#555]">
+            <p className="text-xs font-bold text-[#1D3557]">
               Original price: ₹{listingPrice?.toLocaleString("en-IN")} — discount: ₹{(listingPrice - lastOffer.amount).toLocaleString("en-IN")}
             </p>
             <div className="flex gap-2">
-              <Button type="button" size="sm" onClick={() => respondToOffer(true)} className="flex-1 bg-green-500 text-white border-[#0a0a0a] hover:bg-green-600 gap-1 font-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0px_0px_#0a0a0a]">
+              <Button type="button" size="sm" onClick={() => respondToOffer(true)} className="flex-1 bg-[#2A9D8F] text-[#F1FAEE] border-[#1D3557] hover:bg-[#21867A] gap-1 font-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0px_0px_#1D3557]">
                 <CheckCircle className="w-4 h-4" /> Accept Deal
               </Button>
-              <Button type="button" size="sm" variant="destructive" onClick={() => respondToOffer(false)} className="flex-1 gap-1 font-black">
+              <Button type="button" size="sm" onClick={() => respondToOffer(false)} className="flex-1 bg-[#E63946] text-[#F1FAEE] border-[#1D3557] hover:bg-[#C92D39] gap-1 font-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0px_0px_#1D3557]">
                 <XCircle className="w-4 h-4" /> Reject
               </Button>
             </div>
@@ -343,18 +397,14 @@ export default function ChatPage() {
         {role === "buyer" && chat.status === "active" && (
           <>
             {chat.mode === "normal" && !showNegotiatePrompt && (
-              <button
-                type="button"
-                onClick={() => setShowNegotiatePrompt(true)}
-                className="text-xs font-black text-[#0a1628] hover:underline flex items-center gap-1 w-fit"
-              >
+              <button type="button" onClick={() => setShowNegotiatePrompt(true)} className="text-xs font-black text-[#1D3557] hover:underline flex items-center gap-1 w-fit">
                 <Zap className="w-3 h-3" /> Use bargaining cards to negotiate price
               </button>
             )}
             {showNegotiatePrompt && (
-              <div className="bg-white border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a] space-y-2">
+              <div className="bg-[var(--surface)] border-2 border-[#1D3557] rounded-md p-3 shadow-[3px_3px_0px_0px_#1D3557] space-y-2">
                 <div className="font-black text-sm">Start Bargaining?</div>
-                <p className="text-xs font-medium text-[#555]">
+                <p className="text-xs font-medium text-[#1D3557]">
                   You get <strong>3 bargaining cards</strong>. Each card = one offer. Your offers must go <strong>lower</strong> than the asking price (₹{listingPrice?.toLocaleString("en-IN")}). Seller can accept or reject each one.
                 </p>
                 <div className="flex gap-2">
@@ -375,12 +425,7 @@ export default function ChatPage() {
                   max={listingPrice ? listingPrice - 1 : undefined}
                   aria-label="Offer amount"
                 />
-                <Button
-                  type="button"
-                  onClick={submitOffer}
-                  disabled={cardsRemaining === 0}
-                  className="shrink-0 font-black gap-1"
-                >
+                <Button type="button" onClick={submitOffer} disabled={cardsRemaining === 0} className="shrink-0 font-black gap-1">
                   Play Card ({cardsRemaining} left)
                 </Button>
               </div>
@@ -396,7 +441,7 @@ export default function ChatPage() {
                 key={qr}
                 type="button"
                 onClick={() => sendMessage(qr, "quick-reply")}
-                className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-sm border-2 border-[#0a0a0a] bg-white hover:bg-[#f5c518] transition-colors whitespace-nowrap shadow-[2px_2px_0px_0px_#0a0a0a] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-sm border-2 border-[#1D3557] bg-[var(--surface-alt)] hover:bg-[#F9C74F] transition-colors whitespace-nowrap shadow-[2px_2px_0px_0px_#1D3557] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
               >
                 {qr}
               </button>
@@ -407,21 +452,16 @@ export default function ChatPage() {
         {/* Text + Camera input row */}
         {chat.status === "active" && (
           <form onSubmit={(e) => { e.preventDefault(); sendMessage(text); }} className="flex gap-2">
-            {/* Camera button */}
             <button
               type="button"
               title="Send a photo"
               aria-label="Send a photo"
               onClick={() => cameraInputRef.current?.click()}
               disabled={uploadingPhoto || sendingMsg}
-              className="shrink-0 w-10 h-10 flex items-center justify-center border-2 border-[#0a0a0a] rounded-md bg-white hover:bg-[#f5c518] shadow-[2px_2px_0px_0px_#0a0a0a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-50"
+              className="shrink-0 w-10 h-10 flex items-center justify-center border-2 border-[#1D3557] rounded-md bg-[var(--surface-alt)] hover:bg-[#F9C74F] shadow-[2px_2px_0px_0px_#1D3557] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-50"
             >
-              {uploadingPhoto
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <Camera className="w-4 h-4" />
-              }
+              {uploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
             </button>
-
             <Input
               placeholder="Type a message…"
               value={text}
@@ -430,19 +470,14 @@ export default function ChatPage() {
               disabled={sendingMsg || uploadingPhoto}
               aria-label="Message text"
             />
-            <Button
-              type="submit"
-              disabled={!text.trim() || sendingMsg || uploadingPhoto}
-              className="shrink-0"
-              aria-label="Send message"
-            >
+            <Button type="submit" disabled={!text.trim() || sendingMsg || uploadingPhoto} className="shrink-0" aria-label="Send message">
               {sendingMsg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </form>
         )}
 
         {chat.status !== "active" && chat.negotiation?.outcome !== "accepted" && (
-          <div className="text-center text-sm font-black text-[#555] py-2 border-2 border-[#0a0a0a] rounded-md bg-[#e8e8e8]">
+          <div className="text-center text-sm font-black text-[#1D3557] py-2 border-2 border-[#1D3557] rounded-md bg-[var(--surface)]">
             This chat is closed.
           </div>
         )}
