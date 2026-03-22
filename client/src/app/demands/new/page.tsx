@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { api } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ const CATEGORIES = ["books", "electronics", "clothing", "furniture", "stationery
 
 export default function NewDemandPage() {
   const router = useRouter();
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useRequireAuth();
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -26,10 +26,7 @@ export default function NewDemandPage() {
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
 
-  if (!user) {
-    router.replace("/login");
-    return null;
-  }
+  if (isLoading || !user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +70,7 @@ export default function NewDemandPage() {
         </Link>
         <Card>
           <CardHeader>
-            <CardTitle className="text-[var(--navy)]">Post a Buyer Demand</CardTitle>
+            <CardTitle className="text-[#1D3557]">Post a Buyer Demand</CardTitle>
             <p className="text-sm text-muted-foreground">Tell sellers what you're looking for — they'll come to you.</p>
           </CardHeader>
           <CardContent>
@@ -144,7 +141,7 @@ export default function NewDemandPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--navy)] hover:bg-[var(--navy-dark)] text-white font-semibold"
+                className="w-full bg-[var(--navy)] hover:bg-[var(--navy-light)] text-[#1D3557] font-semibold"
               >
                 {loading ? "Posting…" : "Post Demand"}
               </Button>
