@@ -102,7 +102,7 @@ export default function NewDemandPage() {
 
               <div className="space-y-2">
                 <Label>Category <span className="text-destructive">*</span></Label>
-                <Select onValueChange={setCategory} required>
+                <Select onValueChange={(v: string | null) => setCategory(v ?? "")} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category…" />
                   </SelectTrigger>

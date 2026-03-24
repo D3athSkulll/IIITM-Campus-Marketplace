@@ -86,7 +86,7 @@ export default function OnboardingPage() {
           <div className="space-y-2">
             <Label className="text-base font-semibold text-[#1D3557]">Your hostel block</Label>
             <p className="text-sm text-muted-foreground">Helps buyers know how close you are (no room number needed)</p>
-            <Select onValueChange={setHostelBlock} required>
+            <Select onValueChange={(v: string | null) => setHostelBlock(v ?? "")} required>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select hostel block…" />
               </SelectTrigger>

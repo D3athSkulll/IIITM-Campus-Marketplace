@@ -262,7 +262,7 @@ export default function EditListingPage() {
                   <Label>
                     Category <span className="text-destructive">*</span>
                   </Label>
-                  <Select value={category} onValueChange={setCategory}>
+                  <Select value={category} onValueChange={(v: string | null) => setCategory(v ?? "")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select..." />
                     </SelectTrigger>
