@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HOSTEL_BLOCKS = ["BH-1", "BH-2", "BH-3", "BH-4", "BH-5", "GH-1", "GH-2", "New BH", "Day Scholar"];
@@ -86,18 +85,19 @@ export default function OnboardingPage() {
           <div className="space-y-2">
             <Label className="text-base font-semibold text-[#1D3557]">Your hostel block</Label>
             <p className="text-sm text-muted-foreground">Helps buyers know how close you are (no room number needed)</p>
-            <Select onValueChange={(v: string | null) => setHostelBlock(v ?? "")} required>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select hostel block…" />
-              </SelectTrigger>
-              <SelectContent>
-                {HOSTEL_BLOCKS.map((block) => (
-                  <SelectItem key={block} value={block}>
-                    {block}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              value={hostelBlock}
+              onChange={(e) => setHostelBlock(e.target.value)}
+              required
+              aria-label="Hostel block"
+              title="Hostel block"
+              className="w-full h-10 px-3 rounded-md border-2 border-[#1D3557] bg-white text-[#1D3557] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#1D3557] appearance-none"
+            >
+              <option value="" disabled>Select hostel block…</option>
+              {HOSTEL_BLOCKS.map((block) => (
+                <option key={block} value={block}>{block}</option>
+              ))}
+            </select>
           </div>
         </CardContent>
         <CardFooter>
