@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -14,19 +14,23 @@ const HOSTEL_BLOCKS = ["BH-1", "BH-2", "BH-3", "BH-4", "BH-5", "GH-1", "GH-2", "
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, completeOnboarding } = useAuth();
+  const { user, completeOnboarding, isLoading } = useAuth();
   const [showRealIdentity, setShowRealIdentity] = useState("false");
   const [hostelBlock, setHostelBlock] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (!user) {
-    router.replace("/login");
-    return null;
-  }
-  if (user.onboardingComplete) {
-    router.replace("/");
-    return null;
-  }
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+    if (user.onboardingComplete) {
+      router.replace("/");
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user || user.onboardingComplete) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +56,7 @@ export default function OnboardingPage() {
         <CardTitle className="text-2xl text-[var(--navy)]">One last step</CardTitle>
         <CardDescription>
           Your auto-generated nickname is{" "}
-          <span className="font-semibold text-[var(--gold-dark)]">{user.anonymousNickname}</span>
+          <span className="font-semibold text-[var(--gold-dark)]">&quot;{user.anonymousNickname}&quot;</span>
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
@@ -65,14 +69,14 @@ export default function OnboardingPage() {
                 <RadioGroupItem value="false" id="anon" className="mt-0.5" />
                 <Label htmlFor="anon" className="cursor-pointer">
                   <div className="font-medium">Stay anonymous</div>
-                  <div className="text-sm text-muted-foreground">Use your nickname "{user.anonymousNickname}"</div>
+                  <div className="text-sm text-muted-foreground">Use your nickname &quot;{user.anonymousNickname}&quot;</div>
                 </Label>
               </div>
               <div className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer has-[:checked]:border-[var(--navy)] has-[:checked]:bg-blue-50">
                 <RadioGroupItem value="true" id="real" className="mt-0.5" />
                 <Label htmlFor="real" className="cursor-pointer">
                   <div className="font-medium">Show real name</div>
-                  <div className="text-sm text-muted-foreground">Display as "{user.realName}"</div>
+                  <div className="text-sm text-muted-foreground">Display as &quot;{user.realName}&quot;</div>
                 </Label>
               </div>
             </RadioGroup>

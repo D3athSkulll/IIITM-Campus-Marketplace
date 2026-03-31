@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
 import ListingCard from "@/components/ListingCard";
 import DemandCard from "@/components/DemandCard";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = [
@@ -100,27 +100,33 @@ export default function HomePage() {
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 space-y-6">
         {/* Hero */}
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[var(--navy-dark)] to-[var(--navy-light)] px-6 py-8 text-white">
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[var(--navy-dark)] via-[var(--navy)] to-[var(--navy-light)] px-6 py-8 sm:py-10 text-white animate-fade-up">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIvPjwvc3ZnPg==')] opacity-60" />
           <div className="relative z-10">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-1">Buy & Sell on Campus</h2>
-            <p className="text-white/70 text-sm mb-4">ABV-IIITM Gwalior's trusted student marketplace</p>
-            {!isLoading && (
-              user ? (
-                <Link href="/listings/new">
-                  <Button className="bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy-dark)] font-semibold gap-2">
-                    <PlusCircle className="w-4 h-4" /> List Something
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/register">
-                  <Button className="bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy-dark)] font-semibold">
-                    Join Now →
-                  </Button>
-                </Link>
-              )
-            )}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-medium bg-white/15 px-2.5 py-1 rounded-full backdrop-blur-sm">ABV-IIITM Gwalior</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-1.5 leading-tight">Buy & Sell on Campus</h2>
+            <p className="text-white/60 text-sm mb-5 max-w-md">Trusted student marketplace — anonymous identity, bargaining cards, and fair ratings.</p>
+            <div className="flex flex-wrap gap-2">
+              {!isLoading && (
+                user ? (
+                  <Link href="/listings/new">
+                    <Button className="bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy-dark)] font-semibold gap-2 shadow-lg shadow-black/20">
+                      <PlusCircle className="w-4 h-4" /> List Something
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/register">
+                    <Button className="bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy-dark)] font-semibold shadow-lg shadow-black/20">
+                      Join Now
+                    </Button>
+                  </Link>
+                )
+              )}
+            </div>
           </div>
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 text-7xl opacity-10 select-none">🎓</div>
+          <div className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 text-7xl sm:text-8xl opacity-10 select-none animate-float">🎓</div>
         </div>
 
         {/* Category pills */}

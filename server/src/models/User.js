@@ -84,6 +84,12 @@ const userSchema = new mongoose.Schema(
       default: '',
     },
 
+    role: {
+      type: String,
+      enum: ['student', 'admin'],
+      default: 'student',
+    },
+
     // ── Trust & Rating Aggregates ─────────────────────────────────────────────
     totalTrades: {
       type: Number,
@@ -136,31 +142,25 @@ userSchema.virtual('tradesUntilRatingVisible').get(function () {
 // ─── Pre-save Hooks ─────────────────────────────────────────────────────────────
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('passwordHash')) return next();
-  try {
-    const salt = await bcrypt.genSalt(12);
-    this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
+userSchema.pre('save', async function () {
+  if (!this.isModified('passwordHash')) return;
+  const salt = await bcrypt.genSalt(12);
+  this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
 });
 
 // Ensure unique nickname on save (retry if collision)
-userSchema.pre('save', async function (next) {
-  if (!this.isNew) return next();
+userSchema.pre('save', async function () {
+  if (!this.isNew) return;
 
   let attempts = 0;
   while (attempts < 10) {
-    const existing = await mongoose.models.User.findOne({
+    const existing = await this.constructor.findOne({
       anonymousNickname: this.anonymousNickname,
     });
     if (!existing) break;
     this.anonymousNickname = generateNickname();
     attempts++;
   }
-  next();
 });
 
 // ─── Instance Methods ───────────────────────────────────────────────────────────
@@ -194,8 +194,6 @@ userSchema.methods.toPublicProfile = function () {
 };
 
 // ─── Indexes ────────────────────────────────────────────────────────────────────
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ anonymousNickname: 1 }, { unique: true });
 userSchema.index({ hostelBlock: 1 });
 
 // ─── Export ─────────────────────────────────────────────────────────────────────

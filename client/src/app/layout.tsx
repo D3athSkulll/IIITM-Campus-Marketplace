@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
+import BottomNav from "@/components/BottomNav";
+import Script from "next/script";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -15,6 +17,23 @@ export const metadata: Metadata = {
   description:
     "Buy and sell second-hand goods within ABV-IIITM Gwalior. A trusted campus marketplace built for students, by students.",
   keywords: ["campus marketplace", "IIITM", "second hand", "buy sell", "Gwalior", "students"],
+  manifest: "/manifest.json",
+  icons: {
+    apple: "/icons/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "CampusMart",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0a1628",
 };
 
 export default function RootLayout({
@@ -27,8 +46,14 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
           {children}
+          <BottomNav />
           <Toaster richColors position="top-right" />
         </AuthProvider>
+        <Script id="sw-register" strategy="afterInteractive">{`
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+          }
+        `}</Script>
       </body>
     </html>
   );

@@ -1,0 +1,40 @@
+{
+  "packageId": "com.iiitm.campusmarketplace",
+  "host": "campus-marketplace.vercel.app",
+  "name": "Campus Marketplace",
+  "launcherName": "CampusMart",
+  "display": "standalone",
+  "themeColor": "#0a1628",
+  "navigationColor": "#0a1628",
+  "navigationColorDark": "#0a1628",
+  "navigationDividerColor": "#00000000",
+  "navigationDividerColorDark": "#00000000",
+  "backgroundColor": "#0a1628",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://campus-marketplace.vercel.app/icons/icon-512.png",
+  "maskableIconUrl": "https://campus-marketplace.vercel.app/icons/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "campus-marketplace-keystore.jks",
+    "alias": "campus-marketplace"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [
+    {
+      "name": "Sell Something",
+      "shortName": "Sell",
+      "url": "/listings/new",
+      "chosenIconUrl": "https://campus-marketplace.vercel.app/icons/icon-192.png"
+    },
+    {
+      "name": "My Chats",
+      "shortName": "Chats",
+      "url": "/chats",
+      "chosenIconUrl": "https://campus-marketplace.vercel.app/icons/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://campus-marketplace.vercel.app/manifest.json"
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -12,16 +12,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, user } = useAuth();
+  const { register, user, isLoading } = useAuth();
   const [realName, setRealName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (user) {
-    router.replace(user.onboardingComplete ? "/" : "/onboarding");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace(user.onboardingComplete ? "/" : "/onboarding");
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -40,7 +40,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
 
   return (
     <Link href={`/listings/${listing._id}`} className="group block">
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border border-border">
+      <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 border border-border hover:-translate-y-0.5">
         {/* Image */}
         <div className="relative aspect-[4/3] bg-muted overflow-hidden">
           {listing.images[0] ? (

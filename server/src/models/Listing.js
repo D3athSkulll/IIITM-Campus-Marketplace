@@ -126,6 +126,12 @@ const listingSchema = new mongoose.Schema(
     },
 
     // ── Engagement Metrics ────────────────────────────────────────────────────
+    interestedUsers: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'User',
+      default: [],
+    },
+
     interestCount: {
       type: Number,
       default: 0,

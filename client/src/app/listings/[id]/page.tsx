@@ -39,16 +39,12 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [imageIdx, setImageIdx] = useState(0);
   const [chatLoading, setChatLoading] = useState(false);
-  const [auctionSuggested, setAuctionSuggested] = useState(false);
 
   useEffect(() => {
     const fetchListing = async () => {
       try {
         const data = await api<any>(`/listings/${id}`);
         setListing(data.listing);
-        if (data.listing.shouldSuggestAuction && user?._id === data.listing.seller._id) {
-          setAuctionSuggested(true);
-        }
       } catch {
         toast.error("Listing not found");
         router.push("/");
@@ -97,6 +93,7 @@ export default function ListingDetailPage() {
 
   if (!listing) return null;
 
+  const auctionSuggested = Boolean(listing.shouldSuggestAuction && user?._id === listing.seller._id);
   const isSeller = user?._id === listing.seller._id;
   const cond = CONDITION_LABELS[listing.condition] || { label: listing.condition, color: "bg-gray-100 text-gray-700" };
   const sellerInitials = listing.seller.displayName
@@ -143,12 +140,16 @@ export default function ListingDetailPage() {
                 <>
                   <button
                     onClick={() => setImageIdx((i) => (i - 1 + listing.images.length) % listing.images.length)}
+                    aria-label="Previous image"
+                    title="Previous image"
                     className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setImageIdx((i) => (i + 1) % listing.images.length)}
+                    aria-label="Next image"
+                    title="Next image"
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center shadow"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -160,6 +161,8 @@ export default function ListingDetailPage() {
                   <button
                     key={i}
                     onClick={() => setImageIdx(i)}
+                    aria-label={`Go to image ${i + 1}`}
+                    title={`Go to image ${i + 1}`}
                     className={`w-2 h-2 rounded-full transition-colors ${i === imageIdx ? "bg-white" : "bg-white/50"}`}
                   />
                 ))}
@@ -171,6 +174,8 @@ export default function ListingDetailPage() {
                   <button
                     key={i}
                     onClick={() => setImageIdx(i)}
+                    aria-label={`Select image ${i + 1}`}
+                    title={`Select image ${i + 1}`}
                     className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${i === imageIdx ? "border-[var(--navy)]" : "border-transparent"}`}
                   >
                     <img src={img} alt="" className="w-full h-full object-cover" />

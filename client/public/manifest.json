@@ -1,0 +1,27 @@
+{
+  "name": "Campus Marketplace — ABV-IIITM Gwalior",
+  "short_name": "CampusMart",
+  "description": "Buy and sell second-hand goods within IIITM Gwalior campus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#c5a03f",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "education"],
+  "lang": "en-IN"
+}

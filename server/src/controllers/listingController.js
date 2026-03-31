@@ -191,17 +191,26 @@ const deleteListing = async (req, res) => {
  */
 const markInterest = async (req, res) => {
   try {
-    const listing = await Listing.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { interestCount: 1 } },
-      { new: true }
-    );
-
+    const listing = await Listing.findById(req.params.id);
     if (!listing) return res.status(404).json({ error: 'Listing not found.' });
+
+    // Deduplicate: only count each user once
+    if (listing.interestedUsers && listing.interestedUsers.includes(req.user._id.toString())) {
+      return res.json({
+        interestCount: listing.interestCount,
+        shouldSuggestAuction: listing.shouldSuggestAuction,
+        alreadyInterested: true,
+      });
+    }
+
+    listing.interestedUsers.push(req.user._id);
+    listing.interestCount = listing.interestedUsers.length;
+    await listing.save();
 
     res.json({
       interestCount: listing.interestCount,
       shouldSuggestAuction: listing.shouldSuggestAuction,
+      alreadyInterested: false,
     });
   } catch (error) {
     console.error('markInterest error:', error);
