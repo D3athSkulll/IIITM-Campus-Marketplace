@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Search,
+  Shield,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -108,6 +109,13 @@ export default function Navbar({ onSearch, searchValue = "" }: NavbarProps) {
                 )}
               </Button>
             </Link>
+            {(user as any).role === "admin" && (
+              <Link href="/admin">
+                <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 gap-1.5">
+                  <Shield className="w-4 h-4" /> Admin
+                </Button>
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -171,6 +179,13 @@ export default function Navbar({ onSearch, searchValue = "" }: NavbarProps) {
                   <User className="w-4 h-4" /> Profile
                 </Button>
               </Link>
+              {(user as any).role === "admin" && (
+                <Link href="/admin" onClick={() => setMobileOpen(false)}>
+                  <Button variant="ghost" className="w-full text-white/80 justify-start gap-2">
+                    <Shield className="w-4 h-4" /> Admin Panel
+                  </Button>
+                </Link>
+              )}
               <Button variant="ghost" onClick={handleLogout} className="w-full text-white/60 justify-start gap-2">
                 <LogOut className="w-4 h-4" /> Sign out
               </Button>
