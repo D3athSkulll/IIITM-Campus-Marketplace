@@ -114,16 +114,20 @@ const deleteComment = async (req, res) => {
 const searchUsers = async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q || q.trim().length < 2) {
+    if (!q || q.trim().length < 1) {
       return res.json({ users: [] });
     }
 
     const pattern = new RegExp(q.trim(), 'i');
     const users = await User.find({
-      anonymousNickname: pattern,
+      $or: [
+        { anonymousNickname: pattern },
+        { realName: pattern },
+        { displayName: pattern },
+      ],
     })
-      .select('_id anonymousNickname displayName avatarUrl showRealIdentity')
-      .limit(8);
+      .select('_id anonymousNickname displayName realName avatarUrl showRealIdentity')
+      .limit(10);
 
     res.json({ users });
   } catch (error) {
