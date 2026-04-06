@@ -232,7 +232,7 @@ chatSchema.methods.startNegotiation = function () {
   };
 
   // Add system message
-  this.addMessage(this.buyer, 'system', '🎴 Negotiation started! You have 3 bargaining cards.');
+  this.addMessage(this.buyer, 'system', 'Negotiation started. You have 3 bargaining cards.');
   return this;
 };
 
@@ -293,7 +293,7 @@ chatSchema.methods.respondToOffer = function (accepted) {
     this.negotiation.outcome = 'accepted';
     this.negotiation.agreedPrice = lastOffer.amount;
     this.status = 'completed';
-    this.addMessage(this.seller, 'system', `✅ Offer of ₹${lastOffer.amount} accepted! Deal closed.`);
+    this.addMessage(this.seller, 'system', `Offer of ₹${lastOffer.amount} accepted. Deal closed.`);
   } else {
     lastOffer.status = 'rejected';
     const cardsLeft = this.negotiation.maxRounds - this.negotiation.offers.length;
@@ -301,12 +301,12 @@ chatSchema.methods.respondToOffer = function (accepted) {
     if (cardsLeft <= 0) {
       this.negotiation.outcome = 'rejected';
       this.status = 'failed';
-      this.addMessage(this.seller, 'system', '❌ Offer rejected. No cards remaining — trade failed.');
+      this.addMessage(this.seller, 'system', 'Offer rejected. No cards remaining. Trade failed.');
     } else {
       this.addMessage(
         this.seller,
         'system',
-        `❌ Offer rejected. ${cardsLeft} card${cardsLeft > 1 ? 's' : ''} remaining.`
+        `Offer rejected. ${cardsLeft} card${cardsLeft > 1 ? 's' : ''} remaining.`
       );
     }
   }

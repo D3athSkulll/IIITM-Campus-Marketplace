@@ -12,7 +12,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "flex flex-col overflow-hidden rounded-md bg-white border-2 border-[#0a0a0a] shadow-[4px_4px_0px_0px_#0a0a0a] text-sm",
+        "flex flex-col overflow-hidden rounded-md bg-[var(--card)] border-2 border-[var(--ink)] shadow-[4px_4px_0px_0px_var(--ink)] text-sm",
         size === "sm" ? "gap-3" : "gap-4",
         className
       )}
@@ -45,7 +45,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-sm text-[#555555]", className)}
+      className={cn("text-sm text-[var(--muted-foreground)]", className)}
       {...props}
     />
   )
@@ -76,7 +76,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-footer"
       className={cn(
-        "flex items-center border-t-2 border-[#0a0a0a] bg-[#f5f5f5] px-4 py-3",
+        "flex items-center border-t-2 border-[var(--ink)] bg-[var(--secondary-bg)] px-4 py-3",
         className
       )}
       {...props}

@@ -20,7 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    message: '🎓 Campus Marketplace API is running',
+    message: 'Campus Marketplace API is running',
     timestamp: new Date().toISOString(),
   });
 });
@@ -41,7 +41,7 @@ app.use((req, res) => {
 
 // ─── Error Handler ──────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err.message);
+  console.error('Server error:', err.message);
   res.status(err.status || 500).json({
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
   });
@@ -51,9 +51,9 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   await connectDB();
   app.listen(PORT, () => {
-    console.log(`\n🚀 Campus Marketplace Server running on port ${PORT}`);
-    console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+    console.log(`\nCampus Marketplace server running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}\n`);
   });
 };
 

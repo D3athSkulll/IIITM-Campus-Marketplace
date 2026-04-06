@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -10,7 +10,7 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, X, Tag, Calendar, Camera, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, X, Tag, Calendar, Camera, Loader2, Package, Repeat2 } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = ["books", "electronics", "clothing", "furniture", "stationery", "sports", "accessories", "other"];
@@ -23,7 +23,7 @@ const CONDITIONS = [
 
 export default function NewListingPage() {
   const router = useRouter();
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
 
@@ -44,10 +44,13 @@ export default function NewListingPage() {
   // One hidden file input per image slot
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  if (!user) {
-    router.replace("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login");
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user) return null;
 
   const addImage = () => { if (images.length < 5) setImages([...images, ""]); };
   const removeImage = (idx: number) => { setImages(images.filter((_, i) => i !== idx)); };
@@ -138,7 +141,10 @@ export default function NewListingPage() {
                     className={`px-6 py-2 text-sm font-black transition-colors ${idx > 0 ? "border-l-2 border-[#0a0a0a]" : ""}
                       ${listingType === t ? "bg-[#f5c518] text-[#0a0a0a]" : "bg-white text-[#555] hover:bg-[#f5f5f5]"}`}
                   >
-                    {t === "sell" ? "📦 Sell" : "🔄 Rent Out"}
+                    <span className="inline-flex items-center gap-1.5">
+                      {t === "sell" ? <Package className="w-3.5 h-3.5" /> : <Repeat2 className="w-3.5 h-3.5" />}
+                      {t === "sell" ? "Sell" : "Rent Out"}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -290,7 +296,6 @@ export default function NewListingPage() {
                     key={c.value}
                     type="button"
                     aria-label={`Condition: ${c.label} — ${c.desc}`}
-                    aria-pressed={condition === c.value}
                     onClick={() => setCondition(c.value)}
                     className={`flex flex-col items-start p-3 rounded-md border-2 transition-all text-left
                       ${condition === c.value
@@ -343,7 +348,6 @@ export default function NewListingPage() {
                           ref={(el) => { fileInputRefs.current[idx] = el; }}
                           type="file"
                           accept="image/*"
-                          capture="environment"
                           className="sr-only"
                           aria-label={`Take or choose photo ${idx + 1}`}
                           onChange={(e) => {

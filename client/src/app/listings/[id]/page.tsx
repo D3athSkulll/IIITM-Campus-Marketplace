@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, ExternalLink, ArrowLeft, Star, Eye, Heart, Zap, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { MessageCircle, ExternalLink, ArrowLeft, Star, Eye, Heart, Zap, ChevronLeft, ChevronRight, Calendar, Package, Gavel, Repeat2, Flame } from "lucide-react";
 
 const CONDITION_CONFIG: Record<string, { label: string; bg: string; border: string; text: string }> = {
   "like-new": { label: "Like New", bg: "bg-green-100", border: "border-green-600", text: "text-green-800" },
@@ -124,7 +124,7 @@ export default function ListingDetailPage() {
               {listing.images[imageIdx] ? (
                 <img src={listing.images[imageIdx]} alt={listing.title} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-6xl opacity-30">📦</div>
+                <div className="w-full h-full flex items-center justify-center"><Package className="w-12 h-12 opacity-30" /></div>
               )}
               {listing.images.length > 1 && (
                 <>
@@ -189,12 +189,12 @@ export default function ListingDetailPage() {
               </span>
               {isRental && (
                 <span className="text-[10px] font-black uppercase tracking-wide px-2 py-1 border-2 border-purple-600 bg-purple-100 text-purple-800 rounded-sm">
-                  🔄 Rent
+                  <span className="inline-flex items-center gap-1"><Repeat2 className="w-3 h-3" />Rent</span>
                 </span>
               )}
               {listing.auctionMode && (
                 <span className="text-[10px] font-black uppercase tracking-wide px-2 py-1 border-2 border-[#0a0a0a] bg-[#f5c518] text-[#0a0a0a] rounded-sm">
-                  🔨 Auction
+                  <span className="inline-flex items-center gap-1"><Gavel className="w-3 h-3" />Auction</span>
                 </span>
               )}
               <span className="text-[10px] font-black uppercase tracking-wide px-2 py-1 border-2 border-[#ccc] bg-[#f5f5f5] text-[#555] rounded-sm capitalize">
@@ -237,7 +237,7 @@ export default function ListingDetailPage() {
                     <>
                       <span className="text-[#555]">Available:</span>
                       <span className="text-purple-800">
-                        {new Date(listing.rentalDetails.availableFrom).toLocaleDateString()} →{" "}
+                        {new Date(listing.rentalDetails.availableFrom).toLocaleDateString()} to {" "}
                         {listing.rentalDetails.availableTo ? new Date(listing.rentalDetails.availableTo).toLocaleDateString() : "open"}
                       </span>
                     </>
@@ -245,10 +245,12 @@ export default function ListingDetailPage() {
                 </div>
               </div>
             )}
-
+                    {interestLoading ? "Loading" : interested ? `Interested (${interestCount})` : `Mark Interest (${interestCount})`}
             {/* Stats */}
             <div className="flex items-center gap-4 text-xs font-bold text-[#555]">
-              <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {listing.viewCount} views</span>
+                    {interestCount >= 2
+                      ? <span className="inline-flex items-center gap-1"><Flame className="w-3 h-3" />High demand. Seller may switch to auction.</span>
+                      : "Mark interest to notify the seller you want this."}
               <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {interestCount} interested</span>
             </div>
 
@@ -328,10 +330,10 @@ export default function ListingDetailPage() {
                       }`}
                   >
                     <Heart className={`w-4 h-4 ${interested ? "fill-current" : ""}`} />
-                    {interestLoading ? "…" : interested ? `Interested (${interestCount})` : `Mark Interest (${interestCount})`}
+                    {interestLoading ? "Loading" : interested ? `Interested (${interestCount})` : `Mark Interest (${interestCount})`}
                   </button>
                   <p className="text-[10px] font-medium text-center text-[#888]">
-                    {interestCount >= 2 ? "🔥 High demand! Seller may switch to auction." : "Mark interest to notify the seller you want this."}
+                    {interestCount >= 2 ? "High demand. Seller may switch to auction." : "Mark interest to notify the seller you want this."}
                   </p>
                 </div>
               )

@@ -10,7 +10,7 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Package, ShoppingBag, Lock, Plus, Settings } from "lucide-react";
+import { Star, Package, ShoppingBag, Lock, Plus, Settings, Handshake } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, token } = useAuth();
@@ -125,7 +125,10 @@ export default function ProfilePage() {
               className={`px-5 py-2 text-sm font-black transition-colors ${idx > 0 ? "border-l-2 border-[#0a0a0a]" : ""}
                 ${tab === t ? "bg-[#0a1628] text-white" : "bg-white text-[#0a0a0a] hover:bg-[#f5f5f5]"}`}
             >
-              {t === "listings" ? "📦 My Listings" : "🤝 Trade History"}
+              <span className="inline-flex items-center gap-1.5">
+                {t === "listings" ? <Package className="w-3.5 h-3.5" /> : <Handshake className="w-3.5 h-3.5" />}
+                {t === "listings" ? "My Listings" : "Trade History"}
+              </span>
             </button>
           ))}
         </div>
@@ -155,7 +158,7 @@ export default function ProfilePage() {
                           {listing.images?.[0] ? (
                             <img src={listing.images[0]} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl">📦</div>
+                            <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-[#777]" /></div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -208,7 +211,7 @@ export default function ProfilePage() {
                             {tx.listing?.images?.[0] ? (
                               <img src={tx.listing.images[0]} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xl">📦</div>
+                              <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-[#777]" /></div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">

@@ -77,7 +77,7 @@ export default function ChatPage() {
       const url = await uploadImage(file, token);
       await api<any>(`/chats/${id}/message`, {
         method: "POST",
-        body: { content: "📷 Photo", type: "image", imageUrl: url },
+        body: { content: "Photo", type: "image", imageUrl: url },
         token,
       });
       await fetchChat();
@@ -120,7 +120,7 @@ export default function ChatPage() {
   const respondToOffer = async (accepted: boolean) => {
     try {
       await api<any>(`/chats/${id}/respond`, { method: "POST", body: { accepted }, token });
-      if (accepted) toast.success("Deal accepted! 🎉");
+      if (accepted) toast.success("Deal accepted.");
       await fetchChat();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to respond");
@@ -168,7 +168,6 @@ export default function ChatPage() {
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="sr-only"
         aria-label="Take or choose a photo to send"
         onChange={(e) => {
@@ -234,7 +233,7 @@ export default function ChatPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 font-black">
                   <CheckCircle className="w-5 h-5" />
-                  Deal at ₹{neg.agreedPrice?.toLocaleString("en-IN")}! 🎉
+                  Deal at ₹{neg.agreedPrice?.toLocaleString("en-IN")}
                 </div>
                 <p className="text-xs font-bold">
                   {role === "buyer"
@@ -293,7 +292,7 @@ export default function ChatPage() {
                       loading="lazy"
                     />
                     <div className={`text-[10px] font-bold px-2 py-1 ${isMe ? "bg-[#0a1628] text-white" : "bg-white text-[#555]"}`}>
-                      📷 Photo
+                      Photo
                     </div>
                   </div>
                 </div>

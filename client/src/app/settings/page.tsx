@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ const BEN10_ALIENS = [
 ];
 
 export default function SettingsPage() {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, isLoading } = useAuth();
   const router = useRouter();
 
   const [currentPwd, setCurrentPwd] = useState("");
@@ -39,10 +39,13 @@ export default function SettingsPage() {
   const [showIdentity, setShowIdentity] = useState(user?.showRealIdentity ?? false);
   const [savingIdentity, setSavingIdentity] = useState(false);
 
-  if (!user) {
-    router.replace("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login");
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user) return null;
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();

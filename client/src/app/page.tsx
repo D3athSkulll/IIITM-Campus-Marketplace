@@ -9,19 +9,35 @@ import Navbar from "@/components/Navbar";
 import ListingCard from "@/components/ListingCard";
 import DemandCard from "@/components/DemandCard";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  PlusCircle,
+  ChevronLeft,
+  ChevronRight,
+  ShoppingBag,
+  Laptop,
+  BookOpen,
+  Shirt,
+  Sofa,
+  Pencil,
+  Trophy,
+  Backpack,
+  Package,
+  Search,
+  ClipboardList,
+  Handshake,
+} from "lucide-react";
 import Link from "next/link";
 
 const CATEGORIES = [
-  { value: "all", label: "All", emoji: "🛍️" },
-  { value: "electronics", label: "Electronics", emoji: "💻" },
-  { value: "books", label: "Books", emoji: "📚" },
-  { value: "clothing", label: "Clothing", emoji: "👕" },
-  { value: "furniture", label: "Furniture", emoji: "🪑" },
-  { value: "stationery", label: "Stationery", emoji: "✏️" },
-  { value: "sports", label: "Sports", emoji: "⚽" },
-  { value: "accessories", label: "Accessories", emoji: "🎒" },
-  { value: "other", label: "Other", emoji: "📦" },
+  { value: "all", label: "All", icon: ShoppingBag },
+  { value: "electronics", label: "Electronics", icon: Laptop },
+  { value: "books", label: "Books", icon: BookOpen },
+  { value: "clothing", label: "Clothing", icon: Shirt },
+  { value: "furniture", label: "Furniture", icon: Sofa },
+  { value: "stationery", label: "Stationery", icon: Pencil },
+  { value: "sports", label: "Sports", icon: Trophy },
+  { value: "accessories", label: "Accessories", icon: Backpack },
+  { value: "other", label: "Other", icon: Package },
 ];
 
 type Tab = "listings" | "demands";
@@ -114,13 +130,13 @@ export default function HomePage() {
               ) : (
                 <Link href="/register">
                   <Button className="font-black shadow-[4px_4px_0px_0px_#0a0a0a]">
-                    Join Now →
+                    Join Now
                   </Button>
                 </Link>
               )
             )}
           </div>
-          <div className="absolute right-4 sm:right-10 top-1/2 -translate-y-1/2 text-7xl sm:text-8xl opacity-10 select-none animate-float">🎓</div>
+          <ShoppingBag className="absolute right-4 sm:right-10 top-1/2 -translate-y-1/2 w-20 h-20 sm:w-24 sm:h-24 opacity-10 animate-float" />
         </div>
 
         {/* Category pills */}
@@ -136,7 +152,7 @@ export default function HomePage() {
                   : "bg-white text-[#0a0a0a] border-[#0a0a0a] hover:bg-[#f5f5f5] shadow-[2px_2px_0px_0px_#0a0a0a]"
                 }`}
             >
-              <span>{cat.emoji}</span>
+              <cat.icon className="w-3.5 h-3.5" />
               <span>{cat.label}</span>
             </button>
           ))}
@@ -155,7 +171,10 @@ export default function HomePage() {
                   : "bg-white text-[#0a0a0a] hover:bg-[#f5f5f5]"
                 }`}
             >
-              {t === "listings" ? "📦 Listings" : "🔍 Buyer Demands"}
+              <span className="inline-flex items-center gap-1.5">
+                {t === "listings" ? <Package className="w-3.5 h-3.5" /> : <Search className="w-3.5 h-3.5" />}
+                {t === "listings" ? "Listings" : "Buyer Demands"}
+              </span>
             </button>
           ))}
         </div>
@@ -171,7 +190,7 @@ export default function HomePage() {
               </div>
             ) : listings.length === 0 ? (
               <div className="text-center py-16 border-2 border-[#0a0a0a] rounded-md bg-white shadow-[4px_4px_0px_0px_#0a0a0a]">
-                <div className="text-5xl mb-3">🕵️</div>
+                <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="font-black text-lg">No listings found</p>
                 <p className="text-sm text-[#555] mt-1 font-medium">Try a different category or search term</p>
               </div>
@@ -200,7 +219,7 @@ export default function HomePage() {
         {tab === "demands" && (
           <>
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-[#555]">Sellers: see what buyers need 👇</p>
+              <p className="text-sm font-bold text-[#555] inline-flex items-center gap-1.5"><Handshake className="w-4 h-4" />Sellers: see what buyers need</p>
               {user && (
                 <Link href="/demands/new">
                   <Button size="sm" variant="outline" className="gap-1.5 font-black">
@@ -217,7 +236,7 @@ export default function HomePage() {
               </div>
             ) : demands.length === 0 ? (
               <div className="text-center py-16 border-2 border-[#0a0a0a] rounded-md bg-white shadow-[4px_4px_0px_0px_#0a0a0a]">
-                <div className="text-5xl mb-3">📋</div>
+                <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="font-black text-lg">No buyer demands yet</p>
                 {user && <p className="text-sm text-[#555] mt-1 font-medium">Post what you&apos;re looking for!</p>}
               </div>

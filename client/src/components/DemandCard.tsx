@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import type { ComponentType } from "react";
+import { Backpack, BookOpen, Laptop, Package, Pencil, Shirt, Sofa, Trophy } from "lucide-react";
+
 interface Buyer {
   _id: string;
   displayName: string;
@@ -18,22 +22,39 @@ interface Demand {
   expiresAt: string;
 }
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  books: "📚", electronics: "💻", clothing: "👕", furniture: "🪑",
-  stationery: "✏️", sports: "⚽", accessories: "🎒", other: "📦",
+const CATEGORY_ICON: Record<string, ComponentType<{ className?: string }>> = {
+  books: BookOpen,
+  electronics: Laptop,
+  clothing: Shirt,
+  furniture: Sofa,
+  stationery: Pencil,
+  sports: Trophy,
+  accessories: Backpack,
+  other: Package,
 };
 
 export default function DemandCard({ demand }: { demand: Demand }) {
-  const daysLeft = Math.max(0, Math.ceil((new Date(demand.expiresAt).getTime() - Date.now()) / 86400000));
+  const [daysLeft, setDaysLeft] = useState(0);
+  useEffect(() => {
+    const compute = () => {
+      const now = new Date().getTime();
+      setDaysLeft(Math.max(0, Math.ceil((new Date(demand.expiresAt).getTime() - now) / 86400000)));
+    };
+    compute();
+  }, [demand.expiresAt]);
+
   const isUrgent = daysLeft <= 3;
-  const emoji = CATEGORY_EMOJI[demand.category] || "📦";
+  const Icon = CATEGORY_ICON[demand.category] || Package;
 
   return (
     <div className="rounded-md border-2 border-[#0a0a0a] shadow-[4px_4px_0px_0px_#0a0a0a] bg-white p-4 space-y-3 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-black text-sm leading-tight line-clamp-2 flex-1">{demand.title}</h3>
         <span className="shrink-0 text-[10px] font-black uppercase tracking-wide px-2 py-1 border-2 border-[#0a0a0a] rounded-sm bg-[#f5f5f5] capitalize">
-          {emoji} {demand.category}
+          <span className="inline-flex items-center gap-1">
+            <Icon className="w-3 h-3" />
+            {demand.category}
+          </span>
         </span>
       </div>
 

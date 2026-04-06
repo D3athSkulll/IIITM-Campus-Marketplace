@@ -396,7 +396,7 @@ export default function AdminDashboard() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 text-xl">
-                          📦
+                          <Package className="w-5 h-5" />
                         </div>
                       )}
                     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Flame, Gavel, Package } from "lucide-react";
 
 interface Seller {
   _id: string;
@@ -53,7 +54,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-[#f5c518]">
-              <span className="text-4xl">📦</span>
+              <Package className="w-10 h-10 text-[#0a0a0a]/60" />
             </div>
           )}
 
@@ -65,12 +66,12 @@ export default function ListingCard({ listing }: { listing: Listing }) {
           {/* Right badges */}
           {listing.auctionMode && (
             <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] bg-[#f5c518] text-[#0a0a0a]">
-              🔨 AUCTION
+              <span className="inline-flex items-center gap-1"><Gavel className="w-3 h-3" />AUCTION</span>
             </span>
           )}
           {!listing.auctionMode && listing.shouldSuggestAuction && (
             <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] bg-orange-400 text-white">
-              🔥 HOT
+              <span className="inline-flex items-center gap-1"><Flame className="w-3 h-3" />HOT</span>
             </span>
           )}
           {isRent && (

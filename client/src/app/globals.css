@@ -3,16 +3,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─── Neobrutalism Theme for Campus Marketplace ───────────────────────────── */
+/* ─── Gumroad-Inspired Neobrutalism Theme ─────────────────────────────────── */
 :root {
-  /* Neobrutalism core */
-  --main: #f5c518;         /* Gold/yellow accent — primary action color */
-  --main-foreground: #0a0a0a;
-  --bg: #fafafa;
-  --secondary-bg: #e8e8e8;
-  --border: #0a0a0a;
-  --text: #0a0a0a;
-  --shadow: #0a0a0a;
+  /* Core palette */
+  --main: #ff90e8;
+  --main-foreground: #2a1936;
+  --bg: #fff8ef;
+  --secondary-bg: #f3e8d9;
+  --border: #1b1526;
+  --text: #1b1526;
+  --shadow: #1b1526;
+  --ink: #1b1526;
 
   /* Box shadow values (hard offset — the neobrutalism signature) */
   --shadow-x: 4px;
@@ -21,27 +22,27 @@
   --box-shadow-lg: 6px 6px 0px 0px var(--shadow);
   --reverse-box-shadow: calc(-1 * var(--shadow-x)) calc(-1 * var(--shadow-y)) 0px 0px var(--shadow);
 
-  /* Brand colors (campus identity) */
-  --navy: #0a1628;
-  --navy-light: #1a2d4d;
-  --navy-dark: #06101d;
-  --gold: #f5c518;
-  --gold-dark: #d4a017;
-  --gold-light: #fde68a;
+  /* Brand aliases kept for compatibility with existing components */
+  --navy: #1f1530;
+  --navy-light: #2f2350;
+  --navy-dark: #130d24;
+  --gold: #ff90e8;
+  --gold-dark: #ea70d5;
+  --gold-light: #ffd1f3;
 
   /* Shadcn-compatible aliases */
   --background: var(--bg);
   --foreground: var(--text);
-  --card: #ffffff;
+  --card: #fffdf9;
   --card-foreground: var(--text);
-  --popover: #ffffff;
+  --popover: #fffdf9;
   --popover-foreground: var(--text);
   --primary: var(--main);
   --primary-foreground: var(--main-foreground);
   --secondary: var(--secondary-bg);
   --secondary-foreground: var(--text);
-  --muted: #e8e8e8;
-  --muted-foreground: #555555;
+  --muted: #efe3d2;
+  --muted-foreground: #5c4f69;
   --accent: var(--main);
   --accent-foreground: var(--main-foreground);
   --destructive: #ef4444;
@@ -92,7 +93,11 @@
   body {
     background-color: var(--bg);
     color: var(--text);
-    font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-sans), "DM Sans", system-ui, sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), "Space Grotesk", var(--font-sans), sans-serif;
+    letter-spacing: -0.015em;
   }
   html {
     scroll-behavior: smooth;
@@ -180,8 +185,8 @@
 /* ─── Custom Scrollbar ────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #aaa; }
+::-webkit-scrollbar-thumb { background: #c8b6cf; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #ab92b4; }
 
 /* ─── Touch optimizations ─────────────────────────────────────────────────── */
 @media (hover: none) and (pointer: coarse) {
@@ -210,7 +215,7 @@
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-shimmer {
   animation: shimmer 1.8s linear infinite;
-  background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
+  background: linear-gradient(90deg, #efe3d2 25%, #fff3e6 50%, #efe3d2 75%);
   background-size: 200% 100%;
 }
 

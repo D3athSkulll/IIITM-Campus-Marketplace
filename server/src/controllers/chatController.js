@@ -93,7 +93,7 @@ const initiateChat = async (req, res) => {
       seller: listing.seller,
     });
 
-    chat.addMessage(buyerId, 'system', `👋 Chat started for "${listing.title}"`);
+    chat.addMessage(buyerId, 'system', `Chat started for "${listing.title}"`);
     await chat.save();
 
     await chat.populate([

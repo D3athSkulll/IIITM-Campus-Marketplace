@@ -87,7 +87,7 @@ export default function TransactionPage() {
     }
     setPayStep("done");
     setPaymentDone(true);
-    toast.success("Payment successful! 🎉");
+    toast.success("Payment successful.");
     await fetchTransaction();
   };
 
@@ -108,7 +108,7 @@ export default function TransactionPage() {
     setActionLoading(true);
     try {
       await api<any>(`/transactions/${id}/complete`, { method: "PUT", token });
-      toast.success("Trade completed! 🎉");
+      toast.success("Trade completed.");
       await fetchTransaction();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to complete");
@@ -122,7 +122,7 @@ export default function TransactionPage() {
     setActionLoading(true);
     try {
       await api<any>(`/transactions/${id}/rate`, { method: "POST", body: { score: rating, comment }, token });
-      toast.success("Rating submitted — anonymously!");
+      toast.success("Rating submitted anonymously.");
       setHasRated(true);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to submit rating");
@@ -356,8 +356,8 @@ export default function TransactionPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="bg-[#f5f5f5] border-2 border-[#0a0a0a] rounded-md p-3 text-xs font-bold text-[#555] space-y-1">
-                <p>⭐ Ratings are <strong>anonymous</strong> — the other person can never see who rated them.</p>
-                <p>🔒 Ratings only become visible after <strong>5+ completed trades</strong>, preventing gaming by new users.</p>
+                <p>Ratings are <strong>anonymous</strong> and the other person cannot see who rated them.</p>
+                <p>Ratings become visible only after <strong>5+ completed trades</strong> to reduce gaming by new users.</p>
               </div>
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((s) => (

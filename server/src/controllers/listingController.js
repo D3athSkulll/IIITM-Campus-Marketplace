@@ -1,5 +1,31 @@
 const Listing = require('../models/Listing');
-const { CATEGORIES, CONDITIONS } = require('../models/Listing');
+const { CATEGORIES, CONDITIONS, LISTING_TYPES } = require('../models/Listing');
+
+const MAX_ACTIVE_LISTINGS = Number(process.env.MAX_ACTIVE_LISTINGS || 25);
+
+function validateRentalDetails(details = {}) {
+  if (!details || typeof details !== 'object') {
+    return 'Rental details are required for rent listings.';
+  }
+
+  if (!details.pricePerDay || Number(details.pricePerDay) <= 0) {
+    return 'Rent listings must include a valid per-day price.';
+  }
+
+  if (details.maxRentalDays && Number(details.maxRentalDays) > 365) {
+    return 'Maximum rental duration cannot exceed 365 days.';
+  }
+
+  if (details.availableFrom && details.availableTo) {
+    const from = new Date(details.availableFrom).getTime();
+    const to = new Date(details.availableTo).getTime();
+    if (Number.isNaN(from) || Number.isNaN(to) || from > to) {
+      return 'Rental availability dates are invalid.';
+    }
+  }
+
+  return null;
+}
 
 /**
  * GET /api/listings
@@ -109,6 +135,27 @@ const createListing = async (req, res) => {
       return res.status(400).json({ error: 'Title, description, category, price, condition, and images are required.' });
     }
 
+    const nextListingType = listingType || 'sell';
+    if (!LISTING_TYPES.includes(nextListingType)) {
+      return res.status(400).json({ error: 'Invalid listing type.' });
+    }
+
+    if (nextListingType === 'rent') {
+      const rentalError = validateRentalDetails(rentalDetails);
+      if (rentalError) return res.status(400).json({ error: rentalError });
+    }
+
+    const activeCount = await Listing.countDocuments({
+      seller: req.user._id,
+      status: { $in: ['active', 'reserved'] },
+    });
+
+    if (activeCount >= MAX_ACTIVE_LISTINGS) {
+      return res.status(429).json({
+        error: `You have reached the active listing limit (${MAX_ACTIVE_LISTINGS}). Mark older listings as sold/removed before creating new ones.`,
+      });
+    }
+
     const listing = new Listing({
       seller: req.user._id,
       title,
@@ -119,8 +166,8 @@ const createListing = async (req, res) => {
       images,
       videos: videos || [],
       priceReferenceLink: priceReferenceLink || undefined,
-      listingType: listingType || 'sell',
-      rentalDetails: listingType === 'rent' ? rentalDetails : undefined,
+      listingType: nextListingType,
+      rentalDetails: nextListingType === 'rent' ? rentalDetails : undefined,
     });
 
     await listing.save();
@@ -154,7 +201,19 @@ const updateListing = async (req, res) => {
       return res.status(400).json({ error: 'Cannot edit a sold listing.' });
     }
 
-    const allowed = ['title', 'description', 'category', 'price', 'condition', 'images', 'videos', 'priceReferenceLink', 'status'];
+    const allowed = ['title', 'description', 'category', 'price', 'condition', 'images', 'videos', 'priceReferenceLink', 'status', 'listingType', 'rentalDetails'];
+
+    if (req.body.listingType && !LISTING_TYPES.includes(req.body.listingType)) {
+      return res.status(400).json({ error: 'Invalid listing type.' });
+    }
+
+    const targetType = req.body.listingType || listing.listingType;
+    const targetRentalDetails = req.body.rentalDetails || listing.rentalDetails;
+    if (targetType === 'rent') {
+      const rentalError = validateRentalDetails(targetRentalDetails);
+      if (rentalError) return res.status(400).json({ error: rentalError });
+    }
+
     allowed.forEach((field) => {
       if (req.body[field] !== undefined) listing[field] = req.body[field];
     });

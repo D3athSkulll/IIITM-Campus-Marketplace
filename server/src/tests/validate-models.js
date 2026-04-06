@@ -17,10 +17,10 @@ let failed = 0;
 
 function assert(condition, testName) {
   if (condition) {
-    console.log(`  ✅ PASS: ${testName}`);
+    console.log(`  [PASS] ${testName}`);
     passed++;
   } else {
-    console.log(`  ❌ FAIL: ${testName}`);
+    console.log(`  [FAIL] ${testName}`);
     failed++;
   }
 }
@@ -29,14 +29,14 @@ async function expectValidationError(Model, data, testName) {
   try {
     const doc = new Model(data);
     await doc.validate();
-    console.log(`  ❌ FAIL: ${testName} (expected validation error, got none)`);
+    console.log(`  [FAIL] ${testName} (expected validation error, got none)`);
     failed++;
   } catch (err) {
     if (err.name === 'ValidationError') {
-      console.log(`  ✅ PASS: ${testName}`);
+      console.log(`  [PASS] ${testName}`);
       passed++;
     } else {
-      console.log(`  ❌ FAIL: ${testName} (unexpected error: ${err.message})`);
+      console.log(`  [FAIL] ${testName} (unexpected error: ${err.message})`);
       failed++;
     }
   }
@@ -52,9 +52,9 @@ async function runTests() {
   const testURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/campus-marketplace-test';
   try {
     await mongoose.connect(testURI);
-    console.log(`📦 Connected to: ${testURI}\n`);
+    console.log(`Connected to: ${testURI}\n`);
   } catch (err) {
-    console.log(`⚠️  Could not connect to MongoDB (${err.message}).`);
+    console.log(`Warning: Could not connect to MongoDB (${err.message}).`);
     console.log('   Running validation-only tests (no DB writes)...\n');
   }
 
@@ -87,7 +87,7 @@ async function runTests() {
     validUser.anonymousNickname && validUser.anonymousNickname.length > 0,
     'Auto-generate anonymous nickname'
   );
-  console.log(`     → Generated nickname: "${validUser.anonymousNickname}"`);
+  console.log(`     -> Generated nickname: "${validUser.anonymousNickname}"`);
 
   // Should default to anonymous display
   assert(validUser.showRealIdentity === false, 'Default showRealIdentity is false');
@@ -389,15 +389,15 @@ async function runTests() {
   console.log('╚══════════════════════════════════════════════════╝\n');
 
   if (failed === 0) {
-    console.log('🎉 All model validations passed! Phase 1 is complete.\n');
+    console.log('All model validations passed. Phase 1 is complete.\n');
   } else {
-    console.log(`⚠️  ${failed} test(s) failed. Please review above.\n`);
+    console.log(`Warning: ${failed} test(s) failed. Please review above.\n`);
   }
 
   // Disconnect
   if (mongoose.connection.readyState === 1) {
     await mongoose.disconnect();
-    console.log('📦 Disconnected from MongoDB.\n');
+    console.log('Disconnected from MongoDB.\n');
   }
 
   process.exit(failed > 0 ? 1 : 0);
