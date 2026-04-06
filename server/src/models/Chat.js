@@ -73,7 +73,7 @@ const messageSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: {
-        values: ['text', 'quick-reply', 'offer', 'system'],
+        values: ['text', 'quick-reply', 'offer', 'system', 'image'],
         message: '{VALUE} is not a valid message type',
       },
       required: true,
@@ -84,6 +84,12 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Message content is required'],
       maxlength: [2000, 'Message cannot exceed 2000 characters'],
+    },
+
+    // URL for image-type messages
+    imageUrl: {
+      type: String,
+      default: null,
     },
 
     // For offer-type messages, reference the offer round
@@ -102,11 +108,11 @@ const messageSchema = new mongoose.Schema(
 const QUICK_REPLIES = {
   buyer: [
     'Is this still available?',
-    'Can you share more photos?',
     'What\'s the lowest you\'ll go?',
     'When can we meet?',
     'Is the price negotiable?',
     'How old is this item?',
+    'Any defects I should know about?',
   ],
   seller: [
     'Yes, still available!',
@@ -114,7 +120,7 @@ const QUICK_REPLIES = {
     'I can do a small discount',
     'Let\'s meet at the canteen',
     'Can you pick it up today?',
-    'I\'ll send more photos',
+    'Meet me at BH-1 gate',
   ],
 };
 
@@ -199,12 +205,13 @@ chatSchema.virtual('isNegotiationActive').get(function () {
 // ─── Instance Methods ───────────────────────────────────────────────────────────
 
 // Add a new message to the chat
-chatSchema.methods.addMessage = function (senderId, type, content, offerAmount = null) {
+chatSchema.methods.addMessage = function (senderId, type, content, offerAmount = null, imageUrl = null) {
   this.messages.push({
     sender: senderId,
     type,
     content,
     offerAmount,
+    imageUrl,
   });
   this.lastMessageAt = new Date();
   return this;
@@ -230,12 +237,26 @@ chatSchema.methods.startNegotiation = function () {
 };
 
 // Submit a buyer offer (uses one bargaining card)
-chatSchema.methods.submitOffer = function (amount) {
+// amount must be strictly less than the listing's original price (buyers negotiate down)
+chatSchema.methods.submitOffer = function (amount, listingPrice) {
   if (!this.negotiation || this.negotiation.outcome !== 'pending') {
     throw new Error('No active negotiation');
   }
   if (this.negotiation.offers.length >= this.negotiation.maxRounds) {
     throw new Error('All bargaining cards have been used');
+  }
+
+  // Enforce: offer must be lower than listing price (and any previous offer)
+  if (listingPrice !== undefined && amount >= listingPrice) {
+    throw new Error(`Offer must be less than the asking price of ₹${listingPrice}. Bargaining means negotiating down, not up.`);
+  }
+
+  // Also must be lower than the previous offer in the same session
+  if (this.negotiation.offers.length > 0) {
+    const lastOffer = this.negotiation.offers[this.negotiation.offers.length - 1];
+    if (amount >= lastOffer.amount) {
+      throw new Error(`Each new offer must be lower than your previous offer of ₹${lastOffer.amount}.`);
+    }
   }
 
   const round = this.negotiation.offers.length + 1;
@@ -249,7 +270,7 @@ chatSchema.methods.submitOffer = function (amount) {
   this.addMessage(
     this.buyer,
     'offer',
-    `💰 Offer #${round}: ₹${amount}`,
+    `Card ${round}/3 played — Offering ₹${amount.toLocaleString('en-IN')}`,
     amount
   );
 

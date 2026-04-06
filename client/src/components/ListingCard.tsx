@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 
 interface Seller {
   _id: string;
@@ -10,6 +8,7 @@ interface Seller {
   hostelBlock?: string;
   isRatingVisible?: boolean;
   averageRating?: number | null;
+  avatarUrl?: string;
 }
 
 interface Listing {
@@ -18,6 +17,7 @@ interface Listing {
   price: number;
   condition: string;
   category: string;
+  listingType?: string;
   images: string[];
   interestCount: number;
   viewCount: number;
@@ -28,21 +28,23 @@ interface Listing {
 }
 
 const CONDITION_COLORS: Record<string, string> = {
-  "like-new": "bg-green-100 text-green-800",
-  good: "bg-blue-100 text-blue-800",
-  fair: "bg-yellow-100 text-yellow-800",
-  poor: "bg-red-100 text-red-800",
+  "like-new": "bg-green-400 text-[#0a0a0a]",
+  good: "bg-blue-400 text-white",
+  fair: "bg-yellow-400 text-[#0a0a0a]",
+  poor: "bg-red-400 text-white",
 };
 
 export default function ListingCard({ listing }: { listing: Listing }) {
   const conditionLabel = listing.condition.replace("-", " ");
   const timeAgo = getTimeAgo(listing.createdAt);
+  const isRent = listing.listingType === "rent";
 
   return (
     <Link href={`/listings/${listing._id}`} className="group block">
-      <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 border border-border hover:-translate-y-0.5">
+      {/* Neobrutalism card: bold border + hard shadow, lifts on hover */}
+      <div className="bg-white border-2 border-[#0a0a0a] rounded-md shadow-[4px_4px_0px_0px_#0a0a0a] transition-all duration-150 group-hover:shadow-[6px_6px_0px_0px_#0a0a0a] group-hover:-translate-x-[1px] group-hover:-translate-y-[1px] overflow-hidden">
         {/* Image */}
-        <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+        <div className="relative aspect-[4/3] bg-[#e8e8e8] overflow-hidden border-b-2 border-[#0a0a0a]">
           {listing.images[0] ? (
             <img
               src={listing.images[0]}
@@ -50,45 +52,55 @@ export default function ListingCard({ listing }: { listing: Listing }) {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--navy)] to-[var(--navy-light)]">
-              <span className="text-4xl text-white/30">📦</span>
+            <div className="w-full h-full flex items-center justify-center bg-[#f5c518]">
+              <span className="text-4xl">📦</span>
             </div>
           )}
-          {/* Condition badge */}
-          <span className={`absolute top-2 left-2 text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${CONDITION_COLORS[listing.condition] || "bg-gray-100 text-gray-700"}`}>
+
+          {/* Condition badge — top left */}
+          <span className={`absolute top-2 left-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] capitalize ${CONDITION_COLORS[listing.condition] || "bg-gray-300 text-[#0a0a0a]"}`}>
             {conditionLabel}
           </span>
-          {/* Auction badge */}
+
+          {/* Right badges */}
           {listing.auctionMode && (
-            <span className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--gold)] text-[var(--navy-dark)]">
-              🔨 Auction
+            <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] bg-[#f5c518] text-[#0a0a0a]">
+              🔨 AUCTION
             </span>
           )}
-          {/* Hot badge */}
           {!listing.auctionMode && listing.shouldSuggestAuction && (
-            <span className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full bg-orange-500 text-white">
-              🔥 Hot
+            <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] bg-orange-400 text-white">
+              🔥 HOT
+            </span>
+          )}
+          {isRent && (
+            <span className="absolute bottom-2 left-2 text-[10px] font-black px-1.5 py-0.5 rounded-sm border border-[#0a0a0a] bg-purple-400 text-white">
+              RENT
             </span>
           )}
         </div>
 
         {/* Details */}
-        <div className="p-3 space-y-1.5">
-          <h3 className="font-semibold text-foreground line-clamp-2 text-sm leading-tight group-hover:text-[var(--navy)]">
+        <div className="p-3 space-y-1">
+          <h3 className="font-black text-sm leading-tight line-clamp-2 text-[#0a0a0a] group-hover:text-[#0a1628]">
             {listing.title}
           </h3>
           <div className="flex items-center justify-between">
-            <span className="text-lg font-bold text-[var(--navy)]">₹{listing.price.toLocaleString()}</span>
-            <span className="text-xs text-muted-foreground">{timeAgo}</span>
+            <span className="text-base font-black text-[#0a1628]">
+              ₹{listing.price.toLocaleString("en-IN")}
+            </span>
+            <span className="text-[10px] text-[#888] font-medium">{timeAgo}</span>
           </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{listing.seller.displayName}</span>
+          <div className="flex items-center justify-between text-[10px] text-[#555]">
+            <span className="truncate font-medium">{listing.seller.displayName}</span>
             {listing.seller.hostelBlock && (
-              <span className="bg-muted px-1.5 py-0.5 rounded text-xs">{listing.seller.hostelBlock}</span>
+              <span className="border border-[#0a0a0a] rounded-sm px-1 py-0.5 font-bold bg-[#e8e8e8] shrink-0">
+                {listing.seller.hostelBlock}
+              </span>
             )}
           </div>
         </div>
-      </Card>
+      </div>
     </Link>
   );
 }
@@ -99,6 +111,5 @@ function getTimeAgo(dateStr: string): string {
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }

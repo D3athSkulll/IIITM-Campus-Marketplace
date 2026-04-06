@@ -197,6 +197,7 @@ const getMe = async (req, res) => {
         averageRating: user.isRatingVisible ? user.averageRating : null,
         tradesUntilRatingVisible: user.tradesUntilRatingVisible,
         onboardingComplete: !!user.hostelBlock,
+        role: user.role,
         createdAt: user.createdAt,
       },
     });
@@ -206,4 +207,78 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { register, login, completeOnboarding, getMe };
+/**
+ * PUT /api/auth/password
+ * Change password (requires current password)
+ */
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password are required.' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    }
+
+    const user = await require('../models/User').findById(req.user._id).select('+passwordHash');
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Current password is incorrect.' });
+    }
+
+    user.passwordHash = newPassword; // Will be hashed by pre-save hook
+    await user.save();
+
+    res.json({ message: 'Password changed successfully!' });
+  } catch (error) {
+    console.error('changePassword error:', error);
+    res.status(500).json({ error: 'Failed to change password.' });
+  }
+};
+
+/**
+ * PUT /api/auth/profile
+ * Update profile: identity preference, hostel block, avatar URL
+ */
+const updateProfile = async (req, res) => {
+  try {
+    const { showRealIdentity, hostelBlock, avatarUrl } = req.body;
+    const user = req.user;
+
+    if (showRealIdentity !== undefined) user.showRealIdentity = !!showRealIdentity;
+    if (hostelBlock) user.hostelBlock = hostelBlock;
+    if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+
+    await user.save();
+
+    res.json({
+      message: 'Profile updated!',
+      user: {
+        _id: user._id,
+        email: user.email,
+        realName: user.realName,
+        anonymousNickname: user.anonymousNickname,
+        showRealIdentity: user.showRealIdentity,
+        hostelBlock: user.hostelBlock,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        totalTrades: user.totalTrades,
+        isRatingVisible: user.isRatingVisible,
+        averageRating: user.isRatingVisible ? user.averageRating : null,
+        tradesUntilRatingVisible: user.tradesUntilRatingVisible,
+        onboardingComplete: !!user.hostelBlock,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    console.error('updateProfile error:', error);
+    res.status(500).json({ error: 'Failed to update profile.' });
+  }
+};
+
+module.exports = { register, login, completeOnboarding, getMe, changePassword, updateProfile };

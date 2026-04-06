@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "seed": "node src/scripts/seed.js",
     "validate": "node src/tests/validate-models.js"
   },
   "keywords": ["campus", "marketplace", "iiitm"],

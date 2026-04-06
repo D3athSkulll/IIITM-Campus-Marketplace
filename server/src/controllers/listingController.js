@@ -80,8 +80,15 @@ const getListing = async (req, res) => {
 
     if (!listing) return res.status(404).json({ error: 'Listing not found.' });
 
-    // Increment view count (non-blocking)
-    Listing.findByIdAndUpdate(req.params.id, { $inc: { viewCount: 1 } }).exec();
+    // Deduplicated view count: use userId or IP fingerprint
+    const viewerId = req.user ? req.user._id.toString() : (req.ip || 'anon');
+    const listingWithViews = await Listing.findById(req.params.id).select('viewedBy');
+    if (listingWithViews && !listingWithViews.viewedBy.includes(viewerId)) {
+      Listing.findByIdAndUpdate(req.params.id, {
+        $inc: { viewCount: 1 },
+        $push: { viewedBy: viewerId },
+      }).exec();
+    }
 
     res.json({ listing });
   } catch (error) {
@@ -96,7 +103,7 @@ const getListing = async (req, res) => {
  */
 const createListing = async (req, res) => {
   try {
-    const { title, description, category, price, condition, images, videos, priceReferenceLink } = req.body;
+    const { title, description, category, price, condition, images, videos, priceReferenceLink, listingType, rentalDetails } = req.body;
 
     if (!title || !description || !category || price === undefined || !condition || !images) {
       return res.status(400).json({ error: 'Title, description, category, price, condition, and images are required.' });
@@ -112,6 +119,8 @@ const createListing = async (req, res) => {
       images,
       videos: videos || [],
       priceReferenceLink: priceReferenceLink || undefined,
+      listingType: listingType || 'sell',
+      rentalDetails: listingType === 'rent' ? rentalDetails : undefined,
     });
 
     await listing.save();

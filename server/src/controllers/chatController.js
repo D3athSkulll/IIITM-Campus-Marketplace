@@ -116,7 +116,7 @@ const initiateChat = async (req, res) => {
  */
 const sendMessage = async (req, res) => {
   try {
-    const { content, type = 'text' } = req.body;
+    const { content, type = 'text', imageUrl } = req.body;
     if (!content) return res.status(400).json({ error: 'Message content is required.' });
 
     const chat = await Chat.findById(req.params.id);
@@ -131,11 +131,15 @@ const sendMessage = async (req, res) => {
       return res.status(400).json({ error: 'This chat is no longer active.' });
     }
 
-    if (!['text', 'quick-reply'].includes(type)) {
+    if (!['text', 'quick-reply', 'image'].includes(type)) {
       return res.status(400).json({ error: 'Use /negotiate and /offer routes for negotiation messages.' });
     }
 
-    chat.addMessage(req.user._id, type, content);
+    if (type === 'image' && !imageUrl) {
+      return res.status(400).json({ error: 'imageUrl is required for image messages.' });
+    }
+
+    chat.addMessage(req.user._id, type, content, null, imageUrl || null);
     await chat.save();
 
     const newMessage = chat.messages[chat.messages.length - 1];
@@ -185,14 +189,15 @@ const submitOffer = async (req, res) => {
     const { amount } = req.body;
     if (!amount || amount <= 0) return res.status(400).json({ error: 'A valid offer amount is required.' });
 
-    const chat = await Chat.findById(req.params.id);
+    const chat = await Chat.findById(req.params.id).populate('listing', 'price');
     if (!chat) return res.status(404).json({ error: 'Chat not found.' });
 
     if (chat.buyer.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Only the buyer can submit offers.' });
     }
 
-    chat.submitOffer(Number(amount));
+    const listingPrice = chat.listing?.price;
+    chat.submitOffer(Number(amount), listingPrice);
     await chat.save();
 
     res.json({
@@ -201,7 +206,8 @@ const submitOffer = async (req, res) => {
       negotiation: chat.negotiation,
     });
   } catch (error) {
-    if (error.message.includes('bargaining cards') || error.message.includes('No active negotiation')) {
+    if (error.message.includes('bargaining cards') || error.message.includes('No active negotiation') ||
+        error.message.includes('Offer must be less') || error.message.includes('lower than your previous')) {
       return res.status(400).json({ error: error.message });
     }
     console.error('submitOffer error:', error);
@@ -227,6 +233,11 @@ const respondToOffer = async (req, res) => {
 
     chat.respondToOffer(!!accepted);
     await chat.save();
+
+    // If deal accepted, mark listing as reserved so no new buyers can chat
+    if (accepted && chat.negotiation?.outcome === 'accepted') {
+      await Listing.findByIdAndUpdate(chat.listing, { status: 'reserved' });
+    }
 
     res.json({
       outcome: chat.negotiation.outcome,

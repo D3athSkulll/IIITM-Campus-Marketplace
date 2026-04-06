@@ -6,14 +6,12 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { uploadImage } from "@/lib/uploadImage";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent } from "@/components/ui/card";
 import {
-  ArrowLeft, Send, Zap, CheckCircle, XCircle, CreditCard
+  ArrowLeft, Send, Zap, CheckCircle, XCircle, CreditCard, Info, X, Camera, Loader2
 } from "lucide-react";
 
 export default function ChatPage() {
@@ -28,9 +26,12 @@ export default function ChatPage() {
   const [text, setText] = useState("");
   const [offerAmount, setOfferAmount] = useState("");
   const [sendingMsg, setSendingMsg] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showNegotiatePrompt, setShowNegotiatePrompt] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [showInfoBanner, setShowInfoBanner] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const fetchChat = async () => {
     try {
@@ -59,17 +60,32 @@ export default function ChatPage() {
     if (!content.trim()) return;
     setSendingMsg(true);
     try {
-      await api<any>(`/chats/${id}/message`, {
-        method: "POST",
-        body: { content, type },
-        token,
-      });
+      await api<any>(`/chats/${id}/message`, { method: "POST", body: { content, type }, token });
       setText("");
       await fetchChat();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to send");
     } finally {
       setSendingMsg(false);
+    }
+  };
+
+  const sendPhoto = async (file: File) => {
+    if (!token) { toast.error("Sign in required"); return; }
+    setUploadingPhoto(true);
+    try {
+      const url = await uploadImage(file, token);
+      await api<any>(`/chats/${id}/message`, {
+        method: "POST",
+        body: { content: "📷 Photo", type: "image", imageUrl: url },
+        token,
+      });
+      await fetchChat();
+      toast.success("Photo sent!");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to send photo");
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -87,12 +103,13 @@ export default function ChatPage() {
   const submitOffer = async () => {
     const amount = Number(offerAmount);
     if (!amount || amount <= 0) { toast.error("Enter a valid offer amount"); return; }
+    const listingPrice = chat?.listing?.price;
+    if (listingPrice && amount >= listingPrice) {
+      toast.error(`Offer must be below asking price ₹${listingPrice.toLocaleString("en-IN")}. Bargaining means negotiating down.`);
+      return;
+    }
     try {
-      await api<any>(`/chats/${id}/offer`, {
-        method: "POST",
-        body: { amount },
-        token,
-      });
+      await api<any>(`/chats/${id}/offer`, { method: "POST", body: { amount }, token });
       setOfferAmount("");
       await fetchChat();
     } catch (err: unknown) {
@@ -102,12 +119,8 @@ export default function ChatPage() {
 
   const respondToOffer = async (accepted: boolean) => {
     try {
-      await api<any>(`/chats/${id}/respond`, {
-        method: "POST",
-        body: { accepted },
-        token,
-      });
-      if (accepted) toast.success("Deal accepted!");
+      await api<any>(`/chats/${id}/respond`, { method: "POST", body: { accepted }, token });
+      if (accepted) toast.success("Deal accepted! 🎉");
       await fetchChat();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to respond");
@@ -116,13 +129,10 @@ export default function ChatPage() {
 
   const createTransaction = async () => {
     try {
-      const data = await api<any>("/transactions", {
-        method: "POST",
-        body: { chatId: id },
-        token,
-      });
+      const data = await api<any>("/transactions", { method: "POST", body: { chatId: id }, token });
       setTransactionId(data.transaction._id);
-      toast.success("Transaction created!");
+      toast.success("Transaction created! Proceed to payment.");
+      router.push(`/transactions/${data.transaction._id}`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to create transaction");
     }
@@ -130,11 +140,11 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#fafafa]">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
-          <div className="h-12 bg-muted rounded animate-pulse" />
-          <div className="h-96 bg-muted rounded animate-pulse" />
+          <div className="h-12 bg-[#e8e8e8] rounded-md animate-shimmer border-2 border-[#0a0a0a]" />
+          <div className="h-96 bg-[#e8e8e8] rounded-md animate-shimmer border-2 border-[#0a0a0a]" />
         </div>
       </div>
     );
@@ -148,107 +158,159 @@ export default function ChatPage() {
   const lastOffer = neg?.offers?.[neg.offers.length - 1];
   const hasPendingOffer = lastOffer?.status === "pending";
   const cardsRemaining = neg ? neg.maxRounds - neg.offers.length : 3;
+  const listingPrice = chat.listing?.price;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#fafafa] flex flex-col">
       <Navbar />
+      {/* Hidden camera/file input */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="sr-only"
+        aria-label="Take or choose a photo to send"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) sendPhoto(file);
+          e.target.value = "";
+        }}
+      />
+
       <div className="flex-1 max-w-2xl w-full mx-auto px-4 py-4 flex flex-col gap-3">
+
         {/* Header */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 bg-white border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a]">
           <Link href="/chats">
-            <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+            <Button type="button" variant="outline" size="icon-sm" aria-label="Back to chats">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <div className="w-9 h-9 rounded-full bg-[var(--navy)] flex items-center justify-center text-white font-bold text-sm shrink-0">
-            {other.displayName[0].toUpperCase()}
+          <div className="w-9 h-9 rounded-md bg-[#f5c518] border-2 border-[#0a0a0a] overflow-hidden shrink-0">
+            {other.avatarUrl
+              ? <img src={other.avatarUrl} alt={other.displayName} className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center font-black text-sm">{other.displayName[0]?.toUpperCase()}</div>
+            }
           </div>
-          <div className="flex-1">
-            <div className="font-semibold text-sm">{other.displayName}</div>
-            <div className="text-xs text-muted-foreground">{chat.listing?.title}</div>
+          <div className="flex-1 min-w-0">
+            <div className="font-black text-sm truncate">{other.displayName}</div>
+            <div className="text-xs text-[#555] font-medium truncate">{chat.listing?.title}</div>
           </div>
-          <div className="text-right">
-            <div className="text-sm font-bold text-[var(--navy)]">₹{chat.listing?.price?.toLocaleString()}</div>
+          <div className="text-right shrink-0">
+            <div className="text-sm font-black text-[#0a1628]">₹{listingPrice?.toLocaleString("en-IN")}</div>
             {chat.mode === "negotiation" && (
-              <Badge className="bg-[var(--gold)] text-[var(--navy-dark)] text-[10px]">Negotiating</Badge>
+              <span className="text-[10px] font-black bg-[#f5c518] border border-[#0a0a0a] px-1.5 py-0.5 rounded-sm">
+                NEGOTIATING
+              </span>
             )}
           </div>
         </div>
 
-        {/* Negotiation status bar */}
+        {/* Info banner */}
+        {showInfoBanner && (
+          <div className="flex items-start gap-2 bg-[#f5c518] border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a]">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="flex-1 text-xs font-bold">
+              <span className="font-black">You&apos;re chatting with the {role === "buyer" ? "seller" : "buyer"}.</span>{" "}
+              {role === "buyer"
+                ? "Ask questions, share photos of damage concerns, then use bargaining cards to negotiate the price down."
+                : "Answer questions, share photos of the item, and respond to offers. Accepting an offer locks the deal."
+              }
+            </div>
+            <button type="button" aria-label="Dismiss info banner" onClick={() => setShowInfoBanner(false)} className="text-[#0a0a0a]/60 hover:text-[#0a0a0a] shrink-0">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Negotiation status */}
         {chat.mode === "negotiation" && neg && (
-          <Card className={`border-2 ${neg.outcome === "accepted" ? "border-green-400 bg-green-50" : neg.outcome === "rejected" ? "border-red-300 bg-red-50" : "border-[var(--gold)] bg-amber-50"}`}>
-            <CardContent className="p-3">
-              {neg.outcome === "accepted" ? (
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <div>
-                    <div className="font-semibold text-sm text-green-800">Deal accepted at ₹{neg.agreedPrice?.toLocaleString()}!</div>
-                    {!transactionId && role === "buyer" && (
-                      <Button size="sm" onClick={createTransaction} className="mt-2 bg-green-600 hover:bg-green-700 text-white gap-1.5">
-                        <CreditCard className="w-3.5 h-3.5" /> Proceed to confirm deal
-                      </Button>
-                    )}
-                    {transactionId && (
-                      <Link href={`/transactions/${transactionId}`}>
-                        <Button size="sm" variant="outline" className="mt-2 gap-1.5 text-green-700 border-green-400">
-                          View Transaction →
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
+          <div className={`border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a] ${
+            neg.outcome === "accepted" ? "bg-green-400" :
+            neg.outcome === "rejected" ? "bg-red-400" : "bg-[#f5c518]"
+          }`}>
+            {neg.outcome === "accepted" ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 font-black">
+                  <CheckCircle className="w-5 h-5" />
+                  Deal at ₹{neg.agreedPrice?.toLocaleString("en-IN")}! 🎉
                 </div>
-              ) : neg.outcome === "rejected" ? (
-                <div className="flex items-center gap-2">
-                  <XCircle className="w-5 h-5 text-red-500" />
-                  <div className="text-sm text-red-700 font-medium">Negotiation ended — all cards used.</div>
+                <p className="text-xs font-bold">
+                  {role === "buyer"
+                    ? "Tap below to confirm and pay — this reserves the item for you."
+                    : "Waiting for buyer to confirm payment."}
+                </p>
+                {role === "buyer" && !transactionId && (
+                  <Button type="button" size="sm" onClick={createTransaction} className="gap-1.5 font-black">
+                    <CreditCard className="w-3.5 h-3.5" /> Confirm &amp; Pay
+                  </Button>
+                )}
+              </div>
+            ) : neg.outcome === "rejected" ? (
+              <div className="flex items-center gap-2 font-black text-white">
+                <XCircle className="w-5 h-5" />
+                All 3 cards used — negotiation closed.
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-black uppercase">Bargaining in Progress</span>
+                  <span className="text-xs font-black">{cardsRemaining}/3 cards left</span>
                 </div>
-              ) : (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-amber-800">BARGAINING IN PROGRESS</span>
-                    <span className="text-xs text-amber-700">{cardsRemaining} card{cardsRemaining !== 1 ? "s" : ""} left</span>
-                  </div>
-                  {/* Cards visual */}
-                  <div className="flex gap-1.5">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`flex-1 h-2 rounded-full transition-colors ${i < cardsRemaining ? "bg-[var(--gold)]" : "bg-amber-200"}`}
-                      />
-                    ))}
-                  </div>
+                <div className="flex gap-1.5">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className={`flex-1 h-2.5 rounded-sm border border-[#0a0a0a] ${i < cardsRemaining ? "bg-[#0a1628]" : "bg-white/40"}`} />
+                  ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto space-y-3 min-h-0 max-h-[50vh] pr-1">
+        <div className="flex-1 overflow-y-auto space-y-2 min-h-0 max-h-[45vh] pr-1">
           {chat.messages.map((msg: any) => {
             const isMe = msg.sender?._id === user?._id || msg.sender === user?._id;
             const isSystem = msg.type === "system";
-
             if (isSystem) {
               return (
                 <div key={msg._id} className="flex justify-center">
-                  <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">{msg.content}</span>
+                  <span className="text-xs font-bold bg-[#e8e8e8] border border-[#0a0a0a] px-3 py-1 rounded-sm text-[#555]">
+                    {msg.content}
+                  </span>
                 </div>
               );
             }
-
+            if (msg.type === "image" && msg.imageUrl) {
+              return (
+                <div key={msg._id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                  <div className={`rounded-md border-2 border-[#0a0a0a] overflow-hidden shadow-[2px_2px_0px_0px_#0a0a0a] max-w-[60%]`}>
+                    <img
+                      src={msg.imageUrl}
+                      alt="Shared photo"
+                      className="w-full max-h-48 object-cover"
+                      loading="lazy"
+                    />
+                    <div className={`text-[10px] font-bold px-2 py-1 ${isMe ? "bg-[#0a1628] text-white" : "bg-white text-[#555]"}`}>
+                      📷 Photo
+                    </div>
+                  </div>
+                </div>
+              );
+            }
             return (
               <div key={msg._id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm
+                <div className={`max-w-[75%] rounded-md px-3 py-2 text-sm font-medium border-2 border-[#0a0a0a]
+                  [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap
                   ${msg.type === "offer"
-                    ? "bg-[var(--navy)] text-white font-medium"
+                    ? "bg-[#f5c518] text-[#0a0a0a] font-black"
                     : isMe
-                      ? "bg-[var(--navy)] text-white"
-                      : "bg-white border border-border text-foreground"
+                      ? "bg-[#0a1628] text-white"
+                      : "bg-white text-[#0a0a0a]"
                   }`}
                 >
-                  {msg.type === "offer" && <div className="text-[10px] text-white/70 mb-0.5 uppercase tracking-wide">Offer</div>}
+                  {msg.type === "offer" && <div className="text-[10px] font-black uppercase mb-0.5">Bargain Offer</div>}
                   {msg.content}
                 </div>
               </div>
@@ -257,43 +319,47 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        <Separator />
-
-        {/* Pending offer — seller response */}
+        {/* Seller: pending offer response */}
         {role === "seller" && isNegActive && hasPendingOffer && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
-            <div className="text-sm font-semibold text-amber-800">
-              Buyer offered ₹{lastOffer.amount.toLocaleString()} (Round {lastOffer.round}/3)
+          <div className="bg-[#f5c518] border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a] space-y-2">
+            <div className="text-sm font-black">
+              Buyer offers ₹{lastOffer.amount.toLocaleString("en-IN")} (Card {lastOffer.round}/3)
             </div>
+            <p className="text-xs font-bold text-[#555]">
+              Original price: ₹{listingPrice?.toLocaleString("en-IN")} — discount: ₹{(listingPrice - lastOffer.amount).toLocaleString("en-IN")}
+            </p>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => respondToOffer(true)} className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1.5">
-                <CheckCircle className="w-4 h-4" /> Accept
+              <Button type="button" size="sm" onClick={() => respondToOffer(true)} className="flex-1 bg-green-500 text-white border-[#0a0a0a] hover:bg-green-600 gap-1 font-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[3px_3px_0px_0px_#0a0a0a]">
+                <CheckCircle className="w-4 h-4" /> Accept Deal
               </Button>
-              <Button size="sm" variant="outline" onClick={() => respondToOffer(false)} className="flex-1 text-red-600 border-red-300 hover:bg-red-50 gap-1.5">
+              <Button type="button" size="sm" variant="destructive" onClick={() => respondToOffer(false)} className="flex-1 gap-1 font-black">
                 <XCircle className="w-4 h-4" /> Reject
               </Button>
             </div>
           </div>
         )}
 
-        {/* Buyer negotiation actions */}
+        {/* Buyer: negotiation actions */}
         {role === "buyer" && chat.status === "active" && (
           <>
             {chat.mode === "normal" && !showNegotiatePrompt && (
               <button
+                type="button"
                 onClick={() => setShowNegotiatePrompt(true)}
-                className="text-xs text-[var(--navy)] hover:underline flex items-center gap-1 w-fit"
+                className="text-xs font-black text-[#0a1628] hover:underline flex items-center gap-1 w-fit"
               >
-                <Zap className="w-3 h-3" /> Start negotiation (3 bargaining cards)
+                <Zap className="w-3 h-3" /> Use bargaining cards to negotiate price
               </button>
             )}
             {showNegotiatePrompt && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
-                <div className="text-sm font-semibold text-blue-800">Start Negotiation?</div>
-                <p className="text-xs text-blue-600">You get 3 rounds to make offers. Seller must respond to each.</p>
+              <div className="bg-white border-2 border-[#0a0a0a] rounded-md p-3 shadow-[3px_3px_0px_0px_#0a0a0a] space-y-2">
+                <div className="font-black text-sm">Start Bargaining?</div>
+                <p className="text-xs font-medium text-[#555]">
+                  You get <strong>3 bargaining cards</strong>. Each card = one offer. Your offers must go <strong>lower</strong> than the asking price (₹{listingPrice?.toLocaleString("en-IN")}). Seller can accept or reject each one.
+                </p>
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={startNegotiation} className="bg-[var(--navy)] text-white">Yes, start!</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setShowNegotiatePrompt(false)}>Cancel</Button>
+                  <Button type="button" size="sm" onClick={startNegotiation} className="font-black">Start!</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowNegotiatePrompt(false)}>Cancel</Button>
                 </div>
               </div>
             )}
@@ -301,18 +367,21 @@ export default function ChatPage() {
               <div className="flex gap-2">
                 <Input
                   type="number"
-                  placeholder="Your offer (₹)"
+                  placeholder={`Offer below ₹${listingPrice?.toLocaleString("en-IN") ?? "asking price"}`}
                   value={offerAmount}
                   onChange={(e) => setOfferAmount(e.target.value)}
                   className="flex-1"
                   min={1}
+                  max={listingPrice ? listingPrice - 1 : undefined}
+                  aria-label="Offer amount"
                 />
                 <Button
+                  type="button"
                   onClick={submitOffer}
                   disabled={cardsRemaining === 0}
-                  className="bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-[var(--navy-dark)] font-semibold shrink-0"
+                  className="shrink-0 font-black gap-1"
                 >
-                  Send Offer ({cardsRemaining} left)
+                  Play Card ({cardsRemaining} left)
                 </Button>
               </div>
             )}
@@ -321,12 +390,13 @@ export default function ChatPage() {
 
         {/* Quick replies */}
         {chat.status === "active" && quickReplies.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {quickReplies.map((qr) => (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {quickReplies.map((qr: string) => (
               <button
                 key={qr}
+                type="button"
                 onClick={() => sendMessage(qr, "quick-reply")}
-                className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-[var(--navy)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white transition-colors whitespace-nowrap"
+                className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-sm border-2 border-[#0a0a0a] bg-white hover:bg-[#f5c518] transition-colors whitespace-nowrap shadow-[2px_2px_0px_0px_#0a0a0a] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
               >
                 {qr}
               </button>
@@ -334,32 +404,46 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Text input */}
+        {/* Text + Camera input row */}
         {chat.status === "active" && (
-          <form
-            onSubmit={(e) => { e.preventDefault(); sendMessage(text); }}
-            className="flex gap-2"
-          >
+          <form onSubmit={(e) => { e.preventDefault(); sendMessage(text); }} className="flex gap-2">
+            {/* Camera button */}
+            <button
+              type="button"
+              title="Send a photo"
+              aria-label="Send a photo"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={uploadingPhoto || sendingMsg}
+              className="shrink-0 w-10 h-10 flex items-center justify-center border-2 border-[#0a0a0a] rounded-md bg-white hover:bg-[#f5c518] shadow-[2px_2px_0px_0px_#0a0a0a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-50"
+            >
+              {uploadingPhoto
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Camera className="w-4 h-4" />
+              }
+            </button>
+
             <Input
               placeholder="Type a message…"
               value={text}
               onChange={(e) => setText(e.target.value)}
               className="flex-1"
-              disabled={sendingMsg}
+              disabled={sendingMsg || uploadingPhoto}
+              aria-label="Message text"
             />
             <Button
               type="submit"
-              disabled={!text.trim() || sendingMsg}
-              className="bg-[var(--navy)] hover:bg-[var(--navy-dark)] text-white shrink-0"
+              disabled={!text.trim() || sendingMsg || uploadingPhoto}
+              className="shrink-0"
+              aria-label="Send message"
             >
-              <Send className="w-4 h-4" />
+              {sendingMsg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </form>
         )}
 
-        {chat.status === "failed" && (
-          <div className="text-center text-sm text-muted-foreground py-2">
-            Negotiation ended. This chat is closed.
+        {chat.status !== "active" && chat.negotiation?.outcome !== "accepted" && (
+          <div className="text-center text-sm font-black text-[#555] py-2 border-2 border-[#0a0a0a] rounded-md bg-[#e8e8e8]">
+            This chat is closed.
           </div>
         )}
       </div>

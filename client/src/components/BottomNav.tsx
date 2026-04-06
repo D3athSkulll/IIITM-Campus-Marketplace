@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import {
-  Home,
-  PlusCircle,
-  MessageCircle,
-  User,
-  Shield,
-} from "lucide-react";
+import { Home, PlusCircle, MessageCircle, User, Shield } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
@@ -22,50 +16,40 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  // Don't show on auth pages
+  // Hide on auth pages and individual chat pages
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
-    pathname.startsWith("/onboarding")
-  ) {
-    return null;
-  }
-
-  // Don't show on individual chat pages (has its own input at bottom)
-  if (pathname.match(/^\/chats\/[^/]+$/)) {
-    return null;
-  }
+    pathname.startsWith("/onboarding") ||
+    pathname.match(/^\/chats\/[^/]+$/)
+  ) return null;
 
   const items = NAV_ITEMS.filter((item) => !item.authRequired || user);
-
-  // Add admin link if user is admin
   if (user && (user as any).role === "admin") {
     items.push({ href: "/admin", label: "Admin", icon: Shield, authRequired: true });
   }
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border safe-area-bottom">
-      <div className="flex items-center justify-around h-14">
-        {items.map((item) => {
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-[#0a0a0a] safe-area-bottom shadow-[0px_-4px_0px_0px_#0a0a0a]">
+      <div className="flex items-stretch h-14">
+        {items.map((item, idx) => {
           const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${
-                isActive
-                  ? "text-[var(--navy)]"
-                  : "text-muted-foreground"
-              }`}
+              className={`flex flex-col items-center justify-center flex-1 gap-0.5 transition-colors
+                ${isActive
+                  ? "bg-[#f5c518] text-[#0a0a0a]"
+                  : "text-[#555] hover:bg-[#f5f5f5]"
+                }
+                ${idx < items.length - 1 ? "border-r-2 border-[#0a0a0a]" : ""}
+              `}
             >
-              <Icon
-                className={`w-5 h-5 ${isActive ? "stroke-[2.5px]" : ""}`}
-              />
-              <span className="text-[10px] font-medium leading-none">
+              <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5px]" : ""}`} />
+              <span className="text-[9px] font-black uppercase tracking-wide">
                 {item.label}
               </span>
             </Link>

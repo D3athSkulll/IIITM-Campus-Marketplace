@@ -1,26 +1,42 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// ─── Nickname Generator ────────────────────────────────────────────────────────
-const adjectives = [
-  'Swift', 'Brave', 'Silent', 'Clever', 'Mystic', 'Bold', 'Calm', 'Witty',
-  'Lucky', 'Noble', 'Fierce', 'Bright', 'Quick', 'Sly', 'Cool', 'Sharp',
-  'Wise', 'Grand', 'Keen', 'Vivid', 'Gentle', 'Daring', 'Nimble', 'Stealthy',
-  'Radiant', 'Cosmic', 'Electric', 'Phantom', 'Turbo', 'Sonic'
+// ─── Ben 10 Alien Nickname Generator ──────────────────────────────────────────
+const BEN10_ALIENS = [
+  // Original Series
+  'Heatblast', 'Wildmutt', 'Diamondhead', 'XLR8', 'GreyMatter', 'FourArms',
+  'Stinkfly', 'Ripjaws', 'Upgrade', 'Ghostfreak', 'Cannonbolt', 'Wildvine',
+  'Blitzwolfer', 'Frankenstrike', 'Upchuck', 'Ditto', 'EyeGuy', 'WayBig',
+  'Spitter', 'Snare-Oh',
+  // Alien Force
+  'Swampfire', 'EchoEcho', 'Humungousaur', 'Jetray', 'BigChill',
+  'Chromastone', 'Brainstorm', 'Spidermonkey', 'Goop', 'AlienX',
+  'Lodestar', 'Rath', 'Nanomech',
+  // Ultimate Alien
+  'WaterHazard', 'Terraspin', 'NRG', 'Armodrillo', 'AmpFibian',
+  'Fasttrack', 'Clockwork', 'ChamAlien', 'Eatle', 'JuryRigg',
+  'Shocksquatch', 'Feedback',
+  // Omniverse
+  'Bloxx', 'Gravattack', 'Crashhopper', 'Walkatrout', 'PeskyDust',
+  'Mole-Stache', 'Toepick', 'Astrodactyl', 'Bullfrag', 'KickinHawk',
+  'Whampire', 'Gutrot', 'Atomix',
 ];
 
-const animals = [
-  'Falcon', 'Owl', 'Wolf', 'Fox', 'Hawk', 'Bear', 'Tiger', 'Eagle',
-  'Panther', 'Dolphin', 'Raven', 'Cobra', 'Dragon', 'Phoenix', 'Lion',
-  'Shark', 'Lynx', 'Jaguar', 'Puma', 'Orca', 'Viper', 'Mantis',
-  'Stallion', 'Griffin', 'Kraken', 'Pegasus', 'Sparrow', 'Leopard'
-];
+// Map alien names to their Dicebear avatar seed (unique per alien)
+function getAlienAvatarUrl(alienName) {
+  return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(alienName)}&backgroundColor=0a1628&eyes=eva&mouth=smile01`;
+}
 
 function generateNickname() {
-  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const animal = animals[Math.floor(Math.random() * animals.length)];
-  const num = Math.floor(Math.random() * 100);
-  return `${adj}${animal}${num}`;
+  const alien = BEN10_ALIENS[Math.floor(Math.random() * BEN10_ALIENS.length)];
+  const num = Math.floor(Math.random() * 1000);
+  return `${alien}${num}`;
+}
+
+function getDefaultAvatar(nickname) {
+  // Extract alien name (strip trailing numbers)
+  const alienName = nickname.replace(/\d+$/, '');
+  return getAlienAvatarUrl(alienName);
 }
 
 // ─── Hostel Block Enum ──────────────────────────────────────────────────────────
@@ -80,6 +96,12 @@ const userSchema = new mongoose.Schema(
     },
 
     avatarUrl: {
+      type: String,
+      default: '',
+    },
+
+    // Custom avatar set by user (overrides default alien avatar)
+    customAvatarUrl: {
       type: String,
       default: '',
     },
@@ -148,7 +170,7 @@ userSchema.pre('save', async function () {
   this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
 });
 
-// Ensure unique nickname on save (retry if collision)
+// Ensure unique nickname on save (retry if collision); set default alien avatar
 userSchema.pre('save', async function () {
   if (!this.isNew) return;
 
@@ -160,6 +182,11 @@ userSchema.pre('save', async function () {
     if (!existing) break;
     this.anonymousNickname = generateNickname();
     attempts++;
+  }
+
+  // Set default avatar to alien dicebear avatar if not set
+  if (!this.avatarUrl) {
+    this.avatarUrl = getDefaultAvatar(this.anonymousNickname);
   }
 });
 
@@ -202,3 +229,5 @@ const User = mongoose.model('User', userSchema);
 module.exports = User;
 module.exports.HOSTEL_BLOCKS = HOSTEL_BLOCKS;
 module.exports.generateNickname = generateNickname;
+module.exports.BEN10_ALIENS = BEN10_ALIENS;
+module.exports.getDefaultAvatar = getDefaultAvatar;

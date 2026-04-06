@@ -15,6 +15,7 @@ const CATEGORIES = [
 const CONDITIONS = ['like-new', 'good', 'fair', 'poor'];
 
 const LISTING_STATUSES = ['active', 'sold', 'reserved', 'removed'];
+const LISTING_TYPES = ['sell', 'rent'];
 
 // ─── Listing Schema ─────────────────────────────────────────────────────────────
 const listingSchema = new mongoose.Schema(
@@ -24,6 +25,20 @@ const listingSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Seller is required'],
       index: true,
+    },
+
+    listingType: {
+      type: String,
+      enum: { values: LISTING_TYPES, message: '{VALUE} is not a valid listing type' },
+      default: 'sell',
+    },
+
+    rentalDetails: {
+      pricePerDay: { type: Number, min: 0 },
+      depositAmount: { type: Number, min: 0 },
+      maxRentalDays: { type: Number, min: 1 },
+      availableFrom: { type: Date },
+      availableTo: { type: Date },
     },
 
     title: {
@@ -143,6 +158,13 @@ const listingSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+
+    // Track unique viewers (by userId or IP hash) to prevent double-counting
+    viewedBy: {
+      type: [String],
+      default: [],
+      select: false, // Don't send this in API responses
+    },
   },
   {
     timestamps: true,
@@ -155,8 +177,8 @@ const listingSchema = new mongoose.Schema(
 
 // Flag high-interest listings that should be suggested for auction mode
 listingSchema.virtual('shouldSuggestAuction').get(function () {
-  // Suggest auction if 3+ buyers have shown interest and it's not already in auction mode
-  return !this.auctionMode && this.interestCount >= 3;
+  // Suggest auction if 2+ buyers have shown interest and it's not already in auction mode
+  return !this.auctionMode && this.interestCount >= 2;
 });
 
 // ─── Indexes ────────────────────────────────────────────────────────────────────
@@ -176,3 +198,4 @@ module.exports = Listing;
 module.exports.CATEGORIES = CATEGORIES;
 module.exports.CONDITIONS = CONDITIONS;
 module.exports.LISTING_STATUSES = LISTING_STATUSES;
+module.exports.LISTING_TYPES = LISTING_TYPES;
