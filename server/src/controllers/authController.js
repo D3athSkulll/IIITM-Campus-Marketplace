@@ -225,13 +225,20 @@ const changePassword = async (req, res) => {
       return res.status(400).json({ error: 'New password must be at least 6 characters.' });
     }
 
-    const user = await require('../models/User').findById(req.user._id).select('+passwordHash');
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Verify current password
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(401).json({ error: 'Current password is incorrect.' });
     }
 
-    user.passwordHash = newPassword; // Will be hashed by pre-save hook
+    // Update password hash (will be hashed by pre-save hook)
+    user.passwordHash = newPassword;
+    user.markModified('passwordHash'); // Explicitly mark as modified
     await user.save();
 
     res.json({ message: 'Password changed successfully!' });
