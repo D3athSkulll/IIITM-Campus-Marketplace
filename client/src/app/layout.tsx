@@ -4,7 +4,9 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import BottomNav from "@/components/BottomNav";
+import NotificationBanner from "@/components/NotificationBanner";
 import Script from "next/script";
 
 const publicSans = Public_Sans({
@@ -71,11 +73,14 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans relative isolate">
         <AuthProvider>
-          <SocketProvider>
-            {children}
-            <BottomNav />
-            <Toaster richColors position="top-right" />
-          </SocketProvider>
+          <NotificationProvider>
+            <SocketProvider>
+              <NotificationBanner />
+              {children}
+              <BottomNav />
+              <Toaster richColors position="top-right" />
+            </SocketProvider>
+          </NotificationProvider>
         </AuthProvider>
         <Script id="sw-register" strategy="afterInteractive">{`
           if ('serviceWorker' in navigator) {
