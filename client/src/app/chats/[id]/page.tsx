@@ -151,12 +151,38 @@ export default function ChatPage() {
     setSendingMsg(true);
     setIsTyping(false);
     if (socket && id) socket.emit("stop-typing", id);
+
+    const tempMessage = {
+      _id: `temp-${Date.now()}`,
+      sender: user,
+      type,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Optimistically add message to UI
+    setChat((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        messages: [...prev.messages, tempMessage],
+        lastMessageAt: tempMessage.createdAt,
+      };
+    });
+
     try {
       await api<any>(`/chats/${id}/message`, { method: "POST", body: { content, type }, token });
       setText("");
-      // Fetch to sync our own message (socket already pushes it to the other party)
-      await fetchChat();
+      // Socket will handle the real-time update; just ensure we're synced
     } catch (err: unknown) {
+      // Remove optimistic message on error
+      setChat((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.filter((m: any) => m._id !== tempMessage._id),
+        };
+      });
       toast.error(err instanceof Error ? err.message : "Failed to send");
     } finally {
       setSendingMsg(false);
@@ -168,15 +194,36 @@ export default function ChatPage() {
     setUploadingPhoto(true);
     try {
       const url = await uploadImage(file, token);
+
+      // Optimistically add photo message
+      const tempMessage = {
+        _id: `temp-${Date.now()}`,
+        sender: user,
+        type: "image",
+        content: "Photo",
+        imageUrl: url,
+        createdAt: new Date().toISOString(),
+      };
+
+      setChat((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: [...prev.messages, tempMessage],
+          lastMessageAt: tempMessage.createdAt,
+        };
+      });
+
       await api<any>(`/chats/${id}/message`, {
         method: "POST",
         body: { content: "Photo", type: "image", imageUrl: url },
         token,
       });
-      await fetchChat();
       toast.success("Photo sent!");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to send photo");
+      // Fetch to remove optimistic message on error
+      await fetchChat();
     } finally {
       setUploadingPhoto(false);
     }
