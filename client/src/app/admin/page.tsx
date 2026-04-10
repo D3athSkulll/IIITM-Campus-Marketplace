@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
 import { api } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   ArrowLeft,
   Package,
   Gavel,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -29,6 +31,7 @@ type Tab = "overview" | "users" | "disputes" | "flagged" | "listings" | "demands
 export default function AdminDashboard() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
+  const { addNotification } = useNotification();
 
   const [tab, setTab] = useState<Tab>("overview");
   const [stats, setStats] = useState<any>(null);
@@ -187,6 +190,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const testNotifications = () => {
+    addNotification({
+      type: "success",
+      title: "Test Success",
+      message: "This is a test notification",
+      browser: true,
+      duration: 5000,
+    });
+    addNotification({
+      type: "info",
+      title: "New Chat",
+      message: "Alex sent you a message about MacBook",
+      browser: true,
+      duration: 5000,
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-transparent">
@@ -322,6 +342,27 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             )}
+
+            <Card className="border-[#2A9D8F] bg-[#A8DADC]/15 shadow-[4px_4px_0px_0px_#2A9D8F]">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Bell className="w-5 h-5 text-[#1D3557] shrink-0" />
+                <div className="flex-1">
+                  <div className="font-semibold text-[#1D3557] text-sm">
+                    Test Notifications
+                  </div>
+                  <p className="text-xs text-[#1D3557]">
+                    Send test notifications to verify system
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={testNotifications}
+                  className="bg-[#2A9D8F] text-[#F1FAEE] hover:bg-[#21867A] font-bold gap-1"
+                >
+                  <Bell className="w-3.5 h-3.5" /> Send Test
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 
