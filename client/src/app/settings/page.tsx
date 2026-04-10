@@ -260,6 +260,7 @@ export default function SettingsPage() {
                     )}
                   </div>
 
+                  <div className="border-t-2 border-[#1D3557] pt-3 mt-3">
                     <div className="flex items-center justify-between p-3 border-2 border-[#1D3557] rounded-md bg-[var(--surface)]">
                       <div>
                         <div className="font-black text-sm">Phone Number</div>

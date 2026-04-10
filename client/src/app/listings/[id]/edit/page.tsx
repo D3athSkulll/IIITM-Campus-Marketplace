@@ -228,7 +228,7 @@ export default function EditListingPage() {
             </div>
           )}
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5" disabled={auctionActive}>
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Title */}
               <div className="space-y-2">
                 <Label htmlFor="title">
