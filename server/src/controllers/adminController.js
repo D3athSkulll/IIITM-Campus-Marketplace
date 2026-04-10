@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Listing = require('../models/Listing');
 const Transaction = require('../models/Transaction');
 const Chat = require('../models/Chat');
+const BuyerDemand = require('../models/BuyerDemand');
 
 /**
  * GET /api/admin/stats
@@ -146,4 +147,77 @@ const getFlaggedListings = async (req, res) => {
   }
 };
 
-module.exports = { getStats, getUsers, getDisputes, resolveDispute, updateUserRole, getFlaggedListings };
+/**
+ * GET /api/admin/listings
+ * Get all listings
+ */
+const getAllListings = async (req, res) => {
+  try {
+    const listings = await Listing.find()
+      .populate('seller', 'displayName anonymousNickname realName email')
+      .sort({ createdAt: -1 });
+    res.json({ listings });
+  } catch (error) {
+    console.error('getAllListings error:', error);
+    res.status(500).json({ error: 'Failed to fetch listings.' });
+  }
+};
+
+/**
+ * DELETE /api/admin/listings/:id
+ * Delete a listing
+ */
+const deleteListing = async (req, res) => {
+  try {
+    const listing = await Listing.findByIdAndDelete(req.params.id);
+    if (!listing) return res.status(404).json({ error: 'Listing not found.' });
+    res.json({ message: 'Listing deleted', listing });
+  } catch (error) {
+    console.error('deleteListing error:', error);
+    res.status(500).json({ error: 'Failed to delete listing.' });
+  }
+};
+
+/**
+ * GET /api/admin/demands
+ * Get all buyer demands
+ */
+const getAllDemands = async (req, res) => {
+  try {
+    const demands = await BuyerDemand.find()
+      .populate('buyer', 'displayName anonymousNickname realName email')
+      .sort({ createdAt: -1 });
+    res.json({ demands });
+  } catch (error) {
+    console.error('getAllDemands error:', error);
+    res.status(500).json({ error: 'Failed to fetch demands.' });
+  }
+};
+
+/**
+ * DELETE /api/admin/demands/:id
+ * Delete a buyer demand
+ */
+const deleteDemand = async (req, res) => {
+  try {
+    const demand = await BuyerDemand.findByIdAndDelete(req.params.id);
+    if (!demand) return res.status(404).json({ error: 'Demand not found.' });
+    res.json({ message: 'Demand deleted', demand });
+  } catch (error) {
+    console.error('deleteDemand error:', error);
+    res.status(500).json({ error: 'Failed to delete demand.' });
+  }
+};
+
+module.exports = {
+  getStats,
+  getUsers,
+  getDisputes,
+  resolveDispute,
+  updateUserRole,
+  getFlaggedListings,
+  getAllListings,
+  deleteListing,
+  getAllDemands,
+  deleteDemand,
+};

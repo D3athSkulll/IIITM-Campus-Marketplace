@@ -202,7 +202,24 @@ export default function ListingDetailPage() {
       mentionTimerRef.current = setTimeout(async () => {
         try {
           const data = await api<any>(`/users/search?q=${encodeURIComponent(q)}`, token ? { token } : undefined);
-          setMentionResults(data.users || []);
+          const results = data.users || [];
+
+          // Get seller ID and previous commenters IDs
+          const sellerId = listing?.seller?._id;
+          const commenterIds = new Set(comments.map((c: any) => c.author._id));
+
+          // Sort: seller first, then previous commenters, then others
+          const sorted = results.sort((a: any, b: any) => {
+            const aIsSeller = a._id === sellerId ? 1 : 0;
+            const bIsSeller = b._id === sellerId ? 1 : 0;
+            if (aIsSeller !== bIsSeller) return bIsSeller - aIsSeller;
+
+            const aIsCommenter = commenterIds.has(a._id) ? 1 : 0;
+            const bIsCommenter = commenterIds.has(b._id) ? 1 : 0;
+            return bIsCommenter - aIsCommenter;
+          });
+
+          setMentionResults(sorted);
         } catch {
           setMentionResults([]);
         }
@@ -609,25 +626,37 @@ export default function ListingDetailPage() {
 
               {/* @mention dropdown */}
               {mentionResults.length > 0 && (
-                <div className="absolute left-2 top-full mt-1 z-30 w-64 border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557] overflow-hidden">
-                  {mentionResults.map((u: any) => (
-                    <button
-                      key={u._id}
-                      type="button"
-                      onMouseDown={(e) => { e.preventDefault(); handleSelectMention(u.anonymousNickname); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-[#1D3557] hover:bg-[#A8DADC] transition-colors text-left"
-                    >
-                      <img
-                        src={u.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(u.anonymousNickname)}`}
-                        alt=""
-                        className="w-6 h-6 rounded-sm border border-[#1D3557] object-cover"
-                      />
-                      <span>@{u.anonymousNickname}</span>
-                      {u.showRealIdentity && u.displayName !== u.anonymousNickname && (
-                        <span className="text-[10px] text-[#1D3557]/60 font-medium">({u.displayName})</span>
-                      )}
-                    </button>
-                  ))}
+                <div className="absolute left-2 top-full mt-1 z-30 w-72 border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557] overflow-hidden">
+                  {mentionResults.map((u: any) => {
+                    const isSeller = listing?.seller?._id === u._id;
+                    const isPreviousCommenter = comments.some((c: any) => c.author._id === u._id);
+                    return (
+                      <button
+                        key={u._id}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); handleSelectMention(u.anonymousNickname); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-[#1D3557] hover:bg-[#A8DADC] transition-colors text-left"
+                      >
+                        <img
+                          src={u.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(u.anonymousNickname)}`}
+                          alt=""
+                          className="w-6 h-6 rounded-sm border border-[#1D3557] object-cover"
+                        />
+                        <span>@{u.anonymousNickname}</span>
+                        {u.showRealIdentity && u.displayName !== u.anonymousNickname && (
+                          <span className="text-[10px] text-[#1D3557]/60 font-medium">({u.displayName})</span>
+                        )}
+                        <div className="flex gap-1 ml-auto">
+                          {isSeller && (
+                            <span className="text-[10px] font-black bg-[#2A9D8F] text-[#F1FAEE] px-1.5 py-0.5 rounded">Seller</span>
+                          )}
+                          {isPreviousCommenter && (
+                            <span className="text-[10px] font-black bg-[#F9C74F] text-[#1D3557] px-1.5 py-0.5 rounded">Commented</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

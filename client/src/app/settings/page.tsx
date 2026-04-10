@@ -40,6 +40,14 @@ export default function SettingsPage() {
   const [savingIdentity, setSavingIdentity] = useState(false);
   const [activeTab, setActiveTab] = useState<"identity" | "avatar" | "security" | "danger">("identity");
 
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
+
+  const [realName, setRealName] = useState(user?.realName || "");
+  const [editingName, setEditingName] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/login");
@@ -98,6 +106,42 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSavePhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone.trim()) {
+      toast.error("Phone number cannot be empty");
+      return;
+    }
+    setSavingPhone(true);
+    try {
+      await api("/auth/profile", { method: "PUT", body: { phone }, token });
+      toast.success("Phone number updated!");
+      setEditingPhone(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update phone number");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!realName.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    setSavingName(true);
+    try {
+      await api("/auth/profile", { method: "PUT", body: { realName }, token });
+      toast.success("Username updated!");
+      setEditingName(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update username");
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-transparent">
       <Navbar />
@@ -148,6 +192,13 @@ export default function SettingsPage() {
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between p-3 border-2 border-[#1D3557] rounded-md bg-[var(--surface)]">
                     <div>
+                      <div className="font-black text-sm">College Email</div>
+                      <div className="text-xs text-[#1D3557] font-medium mt-0.5">{user.email}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 border-2 border-[#1D3557] rounded-md bg-[var(--surface)]">
+                    <div>
                       <div className="font-black text-sm">
                         {showIdentity ? "Showing Real Name" : "Anonymous Mode"}
                       </div>
@@ -173,6 +224,75 @@ export default function SettingsPage() {
                     In anonymous mode your alien nickname is shown (e.g. <strong>{user.anonymousNickname}</strong>).
                     Your real name is never shown without your permission.
                   </p>
+
+                  <div className="border-t-2 border-[#1D3557] pt-3 mt-3">
+                    <div className="flex items-center justify-between p-3 border-2 border-[#1D3557] rounded-md bg-[var(--surface)]">
+                      <div>
+                        <div className="font-black text-sm">Your Name</div>
+                        <div className="text-xs text-[#1D3557] font-medium mt-0.5">
+                          {realName || "Not set"}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={editingName ? "outline" : "default"}
+                        onClick={() => setEditingName(!editingName)}
+                        className="font-black"
+                      >
+                        {editingName ? "Cancel" : "Edit"}
+                      </Button>
+                    </div>
+                    {editingName && (
+                      <form onSubmit={handleSaveName} className="space-y-2 mt-3">
+                        <Input
+                          type="text"
+                          placeholder="Your full name"
+                          value={realName}
+                          onChange={(e) => setRealName(e.target.value)}
+                          required
+                          className="placeholder:text-gray-400"
+                        />
+                        <Button type="submit" disabled={savingName} className="w-full font-black">
+                          {savingName ? "Saving..." : "Update Name"}
+                        </Button>
+                      </form>
+                    )}
+                  </div>
+
+                    <div className="flex items-center justify-between p-3 border-2 border-[#1D3557] rounded-md bg-[var(--surface)]">
+                      <div>
+                        <div className="font-black text-sm">Phone Number</div>
+                        <div className="text-xs text-[#1D3557] font-medium mt-0.5">
+                          {phone || "Not set"}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={editingPhone ? "outline" : "default"}
+                        onClick={() => setEditingPhone(!editingPhone)}
+                        className="font-black"
+                      >
+                        {editingPhone ? "Cancel" : "Edit"}
+                      </Button>
+                    </div>
+                    {editingPhone && (
+                      <form onSubmit={handleSavePhone} className="space-y-2 mt-3">
+                        <Input
+                          type="tel"
+                          placeholder="+91 XXXXX XXXXX"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          required
+                          className="placeholder:text-gray-400"
+                        />
+                        <Button type="submit" disabled={savingPhone} className="w-full font-black">
+                          {savingPhone ? "Saving..." : "Update Phone"}
+                        </Button>
+                      </form>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}

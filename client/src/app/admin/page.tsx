@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-type Tab = "overview" | "users" | "disputes" | "flagged";
+type Tab = "overview" | "users" | "disputes" | "flagged" | "listings" | "demands";
 
 export default function AdminDashboard() {
   const { user, token, isLoading } = useAuth();
@@ -35,7 +35,10 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [disputes, setDisputes] = useState<any[]>([]);
   const [flagged, setFlagged] = useState<any[]>([]);
+  const [listings, setListings] = useState<any[]>([]);
+  const [demands, setDemands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -47,6 +50,8 @@ export default function AdminDashboard() {
     if (tab === "users" && users.length === 0) fetchUsers();
     if (tab === "disputes" && disputes.length === 0) fetchDisputes();
     if (tab === "flagged" && flagged.length === 0) fetchFlagged();
+    if (tab === "listings" && listings.length === 0) fetchListings();
+    if (tab === "demands" && demands.length === 0) fetchDemands();
   }, [tab]);
 
   const fetchStats = async () => {
@@ -85,6 +90,64 @@ export default function AdminDashboard() {
       setFlagged(data.listings);
     } catch {
       toast.error("Failed to load flagged listings");
+    }
+  };
+
+  const fetchListings = async () => {
+    try {
+      const data = await api<any>("/admin/listings", { token });
+      setListings(data.listings);
+    } catch {
+      toast.error("Failed to load listings");
+    }
+  };
+
+  const fetchDemands = async () => {
+    try {
+      const data = await api<any>("/admin/demands", { token });
+      setDemands(data.demands);
+    } catch {
+      toast.error("Failed to load demands");
+    }
+  };
+
+  const deleteListing = async (listingId: string) => {
+    if (!confirm("Are you sure you want to delete this listing?")) return;
+    setDeleting(listingId);
+    try {
+      await api<any>(`/admin/listings/${listingId}`, {
+        method: "DELETE",
+        token,
+      });
+      toast.success("Listing deleted");
+      setListings((prev) => prev.filter((l) => l._id !== listingId));
+      fetchStats();
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete listing"
+      );
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const deleteDemand = async (demandId: string) => {
+    if (!confirm("Are you sure you want to delete this demand?")) return;
+    setDeleting(demandId);
+    try {
+      await api<any>(`/admin/demands/${demandId}`, {
+        method: "DELETE",
+        token,
+      });
+      toast.success("Demand deleted");
+      setDemands((prev) => prev.filter((d) => d._id !== demandId));
+      fetchStats();
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete demand"
+      );
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -159,6 +222,8 @@ export default function AdminDashboard() {
       label: "Flagged",
       icon: <Shield className="w-4 h-4" />,
     },
+    { key: "listings", label: "Listings", icon: <ShoppingBag className="w-4 h-4" /> },
+    { key: "demands", label: "Demands", icon: <Package className="w-4 h-4" /> },
   ];
 
   return (
@@ -423,6 +488,108 @@ export default function AdminDashboard() {
                     <Badge className="bg-[#D8E2DC] text-[#1D3557] shrink-0">
                       Removed
                     </Badge>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Listings */}
+        {tab === "listings" && (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground mb-3">
+              {listings.length} active listing{listings.length !== 1 ? "s" : ""}
+            </p>
+            {listings.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="font-medium">No listings</p>
+              </div>
+            ) : (
+              listings.map((l) => (
+                <Card
+                  key={l._id}
+                  className="hover:shadow-[4px_4px_0px_0px_#1D3557] transition-all"
+                >
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-[var(--surface-alt)] border-2 border-[#1D3557] shrink-0">
+                      {l.images?.[0] ? (
+                        <img
+                          src={l.images[0]}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 text-xl">
+                          <Package className="w-5 h-5" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm truncate">
+                        {l.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        by {l.seller?.displayName || l.seller?.realName} · ₹{l.price.toLocaleString()}
+                      </div>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteListing(l._id)}
+                      disabled={deleting === l._id}
+                      className="shrink-0"
+                    >
+                      {deleting === l._id ? "Deleting..." : "Delete"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Demands */}
+        {tab === "demands" && (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground mb-3">
+              {demands.length} active demand{demands.length !== 1 ? "s" : ""}
+            </p>
+            {demands.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="font-medium">No demands</p>
+              </div>
+            ) : (
+              demands.map((d) => (
+                <Card
+                  key={d._id}
+                  className="hover:shadow-[4px_4px_0px_0px_#1D3557] transition-all"
+                >
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm truncate">
+                        {d.title || d.description?.substring(0, 60)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        by {d.buyer?.displayName || d.buyer?.realName} · {d.category}
+                      </div>
+                      {d.budget && (
+                        <div className="text-xs font-medium text-[#1D3557] mt-0.5">
+                          Budget: ₹{d.budget.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteDemand(d._id)}
+                      disabled={deleting === d._id}
+                      className="shrink-0"
+                    >
+                      {deleting === d._id ? "Deleting..." : "Delete"}
+                    </Button>
                   </CardContent>
                 </Card>
               ))

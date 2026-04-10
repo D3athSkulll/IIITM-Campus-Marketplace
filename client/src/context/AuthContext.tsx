@@ -7,6 +7,7 @@ interface User {
   _id: string;
   email: string;
   realName: string;
+  phone?: string;
   anonymousNickname: string;
   showRealIdentity: boolean;
   hostelBlock: string | null;
@@ -24,7 +25,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, realName: string) => Promise<void>;
+  register: (email: string, password: string, realName: string, phone: string) => Promise<void>;
   completeOnboarding: (showRealIdentity: boolean, hostelBlock: string) => Promise<void>;
   logout: () => void;
 }
@@ -71,10 +72,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
   }, []);
 
-  const register = useCallback(async (email: string, password: string, realName: string) => {
+  const register = useCallback(async (email: string, password: string, realName: string, phone: string) => {
     const data = await api<{ token: string; user: User }>("/auth/register", {
       method: "POST",
-      body: { email, password, realName },
+      body: { email, password, realName, phone },
     });
     localStorage.setItem("cm_token", data.token);
     setToken(data.token);

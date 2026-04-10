@@ -8,12 +8,12 @@ const { generateNickname } = require('../models/User');
  */
 const register = async (req, res) => {
   try {
-    const { email, password, realName } = req.body;
+    const { email, password, realName, phone } = req.body;
 
     // Validate required fields
-    if (!email || !password || !realName) {
+    if (!email || !password || !realName || !phone) {
       return res.status(400).json({
-        error: 'Email, password, and real name are required.',
+        error: 'Email, password, real name, and phone number are required.',
       });
     }
 
@@ -44,6 +44,7 @@ const register = async (req, res) => {
       email: email.toLowerCase(),
       passwordHash: password, // Will be hashed by pre-save hook
       realName: realName.trim(),
+      phone: phone.trim(),
       anonymousNickname: generateNickname(),
     });
 
@@ -59,6 +60,7 @@ const register = async (req, res) => {
         _id: user._id,
         email: user.email,
         realName: user.realName,
+        phone: user.phone,
         anonymousNickname: user.anonymousNickname,
         showRealIdentity: user.showRealIdentity,
         hostelBlock: user.hostelBlock,
@@ -115,6 +117,7 @@ const login = async (req, res) => {
         _id: user._id,
         email: user.email,
         realName: user.realName,
+        phone: user.phone,
         anonymousNickname: user.anonymousNickname,
         showRealIdentity: user.showRealIdentity,
         hostelBlock: user.hostelBlock,
@@ -187,6 +190,7 @@ const getMe = async (req, res) => {
         _id: user._id,
         email: user.email,
         realName: user.realName,
+        phone: user.phone,
         anonymousNickname: user.anonymousNickname,
         showRealIdentity: user.showRealIdentity,
         hostelBlock: user.hostelBlock,
@@ -243,12 +247,14 @@ const changePassword = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
   try {
-    const { showRealIdentity, hostelBlock, avatarUrl } = req.body;
+    const { showRealIdentity, hostelBlock, avatarUrl, phone, realName } = req.body;
     const user = req.user;
 
     if (showRealIdentity !== undefined) user.showRealIdentity = !!showRealIdentity;
     if (hostelBlock) user.hostelBlock = hostelBlock;
     if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+    if (phone !== undefined) user.phone = phone.trim();
+    if (realName !== undefined) user.realName = realName.trim();
 
     await user.save();
 
@@ -258,6 +264,7 @@ const updateProfile = async (req, res) => {
         _id: user._id,
         email: user.email,
         realName: user.realName,
+        phone: user.phone,
         anonymousNickname: user.anonymousNickname,
         showRealIdentity: user.showRealIdentity,
         hostelBlock: user.hostelBlock,

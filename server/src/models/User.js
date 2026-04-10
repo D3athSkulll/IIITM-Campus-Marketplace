@@ -87,6 +87,12 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
     hostelBlock: {
       type: String,
       enum: {

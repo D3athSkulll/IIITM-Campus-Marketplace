@@ -70,6 +70,7 @@ export default function EditListingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [auctionActive, setAuctionActive] = useState(false);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -91,6 +92,10 @@ export default function EditListingPage() {
           toast.error("You can only edit your own listings");
           router.push("/");
           return;
+        }
+        // Check if auction is active
+        if (l.auctionMode) {
+          setAuctionActive(true);
         }
         setTitle(l.title);
         setDescription(l.description);
@@ -216,8 +221,14 @@ export default function EditListingPage() {
               {deleting ? "Deleting..." : "Delete"}
             </Button>
           </CardHeader>
+          {auctionActive && (
+            <div className="px-6 py-4 bg-[#E63946]/10 border-b-2 border-[#E63946] text-[#E63946]">
+              <p className="font-black text-sm mb-1">Auction In Progress</p>
+              <p className="text-xs font-medium">This listing is currently in an active auction. You cannot edit it until the auction ends.</p>
+            </div>
+          )}
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5" disabled={auctionActive}>
               {/* Title */}
               <div className="space-y-2">
                 <Label htmlFor="title">
@@ -400,10 +411,10 @@ export default function EditListingPage() {
 
               <Button
                 type="submit"
-                disabled={saving}
+                disabled={saving || auctionActive}
                 className="w-full bg-[var(--navy)] hover:bg-[var(--navy-light)] text-[#F1FAEE] font-black py-5"
               >
-                {saving ? "Saving..." : "Save Changes"}
+                {saving ? "Saving..." : auctionActive ? "Editing Disabled (Auction Active)" : "Save Changes"}
               </Button>
             </form>
           </CardContent>

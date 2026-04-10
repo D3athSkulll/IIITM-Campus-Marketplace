@@ -9,13 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register, user, isLoading } = useAuth();
   const [realName, setRealName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -36,9 +39,13 @@ export default function RegisterPage() {
       toast.error("Password must be at least 6 characters.");
       return;
     }
+    if (!phone) {
+      toast.error("Phone number is required.");
+      return;
+    }
     setLoading(true);
     try {
-      await register(email, password, realName);
+      await register(email, password, realName, phone);
       toast.success("Account created! Let's set up your profile.");
       router.push("/onboarding");
     } catch (err: unknown) {
@@ -65,6 +72,7 @@ export default function RegisterPage() {
               onChange={(e) => setRealName(e.target.value)}
               required
               autoComplete="name"
+              className="placeholder:text-gray-400"
             />
           </div>
           <div className="space-y-2">
@@ -77,21 +85,47 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              className="placeholder:text-gray-400"
             />
             <p className="text-xs text-muted-foreground">Only @iiitm.ac.in addresses allowed</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="phone">Phone Number</Label>
             <Input
-              id="password"
-              type="password"
-              placeholder="Min. 6 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              id="phone"
+              type="tel"
+              placeholder="+91 XXXXX XXXXX"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               required
-              minLength={6}
-              autoComplete="new-password"
+              autoComplete="tel"
+              className="placeholder:text-gray-400"
             />
+            <p className="text-xs text-muted-foreground">Required to verify and contact you</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative flex items-center">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Min. 6 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                className="pr-10 placeholder:text-gray-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1D3557] hover:opacity-70 transition-opacity"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
