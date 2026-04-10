@@ -1,5 +1,5 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-const TIMEOUT_MS = 15000; // 15 second timeout
+const TIMEOUT_MS = 30000; // 30 second timeout for complex requests
 
 interface ApiOptions {
   method?: string;
@@ -50,13 +50,12 @@ export async function api<T = unknown>(
       return data as T;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+      const isNetworkError = error instanceof TypeError && error.message.includes("Failed to fetch");
+      const shouldRetry = isNetworkError && attempt < retries;
 
-      // Don't retry on client errors (4xx)
-      if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
-        if (attempt < retries) {
-          await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000)); // Exponential backoff
-          continue;
-        }
+      if (shouldRetry) {
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000)); // Exponential backoff
+        continue;
       }
 
       throw lastError;
