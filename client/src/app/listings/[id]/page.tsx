@@ -503,6 +503,50 @@ export default function ListingDetailPage() {
               </div>
             </div>
 
+            {/* Linked demand card */}
+            {listing.relatedDemand && (
+              <div className="border-2 border-[#2A9D8F] rounded-md p-3 shadow-[3px_3px_0px_0px_#2A9D8F] bg-[#A8DADC] space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-black text-[#1D3557]">
+                  <MessageSquare className="w-3.5 h-3.5" /> Linked to Buyer Demand
+                </div>
+                <div className="bg-[#F1FAEE] rounded-md p-2.5 space-y-1">
+                  <div className="font-black text-sm text-[#1D3557] leading-snug">{listing.relatedDemand.title}</div>
+                  {(listing.relatedDemand.budgetMin || listing.relatedDemand.budgetMax) && (
+                    <div className="text-xs font-bold text-[#1D3557]">
+                      Budget: ₹{listing.relatedDemand.budgetMin || "any"}-₹{listing.relatedDemand.budgetMax || "any"}
+                    </div>
+                  )}
+                  {listing.relatedDemand.description && (
+                    <div className="text-xs font-medium text-[#1D3557] opacity-90 line-clamp-2">
+                      {listing.relatedDemand.description}
+                    </div>
+                  )}
+                </div>
+                {!isSeller && listing.relatedDemand.buyer && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-xs font-black gap-1.5"
+                    onClick={async () => {
+                      if (!user) { toast.error("Sign in to chat"); router.push("/login"); return; }
+                      setChatLoading(true);
+                      try {
+                        const data = await api<any>("/chats", { method: "POST", body: { userId: listing.relatedDemand.buyer._id }, token });
+                        router.push(`/chats/${data.chat._id}`);
+                      } catch (err: unknown) {
+                        toast.error(err instanceof Error ? err.message : "Failed to start chat");
+                      } finally {
+                        setChatLoading(false);
+                      }
+                    }}
+                    disabled={chatLoading}
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" /> Chat with {listing.relatedDemand.buyer.displayName}
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* CTAs */}
             {listing.status === "active" ? (
               isSeller ? (

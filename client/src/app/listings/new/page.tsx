@@ -40,6 +40,9 @@ export default function NewListingPage() {
   const [maxRentalDays, setMaxRentalDays] = useState("");
   const [availableFrom, setAvailableFrom] = useState("");
   const [availableTo, setAvailableTo] = useState("");
+  const [relatedDemandId, setRelatedDemandId] = useState("");
+  const [availableDemands, setAvailableDemands] = useState<any[]>([]);
+  const [loadingDemands, setLoadingDemands] = useState(false);
 
   // One hidden file input per image slot
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -49,6 +52,28 @@ export default function NewListingPage() {
       router.replace("/login");
     }
   }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (!category) {
+      setAvailableDemands([]);
+      setRelatedDemandId("");
+      return;
+    }
+
+    const fetchDemands = async () => {
+      setLoadingDemands(true);
+      try {
+        const data = await api<any>(`/demands?category=${category}`);
+        setAvailableDemands(data.demands || []);
+      } catch (err) {
+        setAvailableDemands([]);
+      } finally {
+        setLoadingDemands(false);
+      }
+    };
+
+    fetchDemands();
+  }, [category]);
 
   if (isLoading || !user) return null;
 
@@ -93,6 +118,7 @@ export default function NewListingPage() {
         images: validImages,
         listingType,
         priceReferenceLink: priceReferenceLink || undefined,
+        relatedDemand: relatedDemandId || undefined,
       };
       if (listingType === "rent") {
         body.rentalDetails = {
@@ -222,6 +248,30 @@ export default function NewListingPage() {
                   />
                 </div>
               </div>
+
+              {category && availableDemands.length > 0 && (
+                <div className="space-y-1">
+                  <label htmlFor="related-demand" className="text-xs font-black uppercase tracking-wide">
+                    Link to Buyer Demand <span className="text-[#1D3557] font-normal">(optional)</span>
+                  </label>
+                  <select
+                    id="related-demand"
+                    title="Select related demand"
+                    value={relatedDemandId}
+                    onChange={(e) => setRelatedDemandId(e.target.value)}
+                    disabled={loadingDemands}
+                    className="w-full px-3 py-2 rounded-md border-2 border-[#1D3557] text-sm shadow-[3px_3px_0px_0px_#1D3557] focus:outline-none focus:translate-x-[3px] focus:translate-y-[3px] focus:shadow-none transition-all bg-[var(--surface-alt)] font-bold capitalize appearance-none disabled:opacity-50"
+                  >
+                    <option value="">No demand selected</option>
+                    {availableDemands.map((d) => (
+                      <option key={d._id} value={d._id}>
+                        {d.title} {d.budgetMin && d.budgetMax ? `(₹${d.budgetMin}-${d.budgetMax})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-[#1D3557] font-medium">Buyers with this demand can easily find you.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -70,20 +70,38 @@ const getChat = async (req, res) => {
  */
 const initiateChat = async (req, res) => {
   try {
-    const { listingId } = req.body;
-    if (!listingId) return res.status(400).json({ error: 'listingId is required.' });
+    const { listingId, userId } = req.body;
+    if (!listingId && !userId) return res.status(400).json({ error: 'listingId or userId is required.' });
 
-    const listing = await Listing.findById(listingId);
-    if (!listing) return res.status(404).json({ error: 'Listing not found.' });
-    if (listing.status !== 'active') return res.status(400).json({ error: 'This listing is no longer active.' });
+    const currentUserId = req.user._id;
+    let otherUserId;
 
-    const buyerId = req.user._id;
-    if (listing.seller.toString() === buyerId.toString()) {
-      return res.status(400).json({ error: 'You cannot chat about your own listing.' });
+    if (listingId) {
+      const listing = await Listing.findById(listingId);
+      if (!listing) return res.status(404).json({ error: 'Listing not found.' });
+      if (listing.status !== 'active') return res.status(400).json({ error: 'This listing is no longer active.' });
+
+      if (listing.seller.toString() === currentUserId.toString()) {
+        return res.status(400).json({ error: 'You cannot chat about your own listing.' });
+      }
+
+      await Listing.findByIdAndUpdate(listingId, { $inc: { interestCount: 1 } });
+      otherUserId = listing.seller;
+    } else {
+      if (userId === currentUserId.toString()) {
+        return res.status(400).json({ error: 'You cannot chat with yourself.' });
+      }
+      const User = require('../models/User');
+      const otherUser = await User.findById(userId);
+      if (!otherUser) return res.status(404).json({ error: 'User not found.' });
+      otherUserId = userId;
     }
 
-    // Check if chat already exists
-    let chat = await Chat.findOne({ listing: listingId, buyer: buyerId });
+    const filter = listingId
+      ? { listing: listingId, buyer: currentUserId }
+      : { $or: [{ buyer: currentUserId, seller: otherUserId }, { buyer: otherUserId, seller: currentUserId }] };
+
+    let chat = await Chat.findOne(filter);
     if (chat) {
       await chat.populate([
         { path: 'listing', select: 'title images price status condition category seller' },
@@ -94,16 +112,17 @@ const initiateChat = async (req, res) => {
       return res.json({ chat, existing: true });
     }
 
-    // Mark interest on listing
-    await Listing.findByIdAndUpdate(listingId, { $inc: { interestCount: 1 } });
-
     chat = new Chat({
-      listing: listingId,
-      buyer: buyerId,
-      seller: listing.seller,
+      listing: listingId || undefined,
+      buyer: currentUserId,
+      seller: otherUserId,
     });
 
-    chat.addMessage(buyerId, 'system', `Chat started for "${listing.title}"`);
+    if (listingId) {
+      const listing = await Listing.findById(listingId);
+      chat.addMessage(currentUserId, 'system', `Chat started for "${listing.title}"`);
+    }
+
     await chat.save();
 
     await chat.populate([

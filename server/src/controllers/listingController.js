@@ -247,7 +247,12 @@ const getListings = async (req, res) => {
 const getListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id)
-      .populate('seller', 'displayName anonymousNickname realName showRealIdentity hostelBlock avatarUrl totalTrades isRatingVisible averageRating tradesUntilRatingVisible');
+      .populate('seller', 'displayName anonymousNickname realName showRealIdentity hostelBlock avatarUrl totalTrades isRatingVisible averageRating tradesUntilRatingVisible')
+      .populate({
+        path: 'relatedDemand',
+        select: 'title description budgetMin budgetMax buyer',
+        populate: { path: 'buyer', select: 'displayName' }
+      });
 
     if (!listing) return res.status(404).json({ error: 'Listing not found.' });
 
@@ -287,7 +292,7 @@ const getListing = async (req, res) => {
  */
 const createListing = async (req, res) => {
   try {
-    const { title, description, category, price, condition, images, videos, priceReferenceLink, listingType, rentalDetails } = req.body;
+    const { title, description, category, price, condition, images, videos, priceReferenceLink, listingType, rentalDetails, relatedDemand } = req.body;
 
     if (!title || !description || !category || price === undefined || !condition || !images) {
       return res.status(400).json({ error: 'Title, description, category, price, condition, and images are required.' });
@@ -326,10 +331,14 @@ const createListing = async (req, res) => {
       priceReferenceLink: priceReferenceLink || undefined,
       listingType: nextListingType,
       rentalDetails: nextListingType === 'rent' ? rentalDetails : undefined,
+      relatedDemand: relatedDemand || undefined,
     });
 
     await listing.save();
-    await listing.populate('seller', 'displayName anonymousNickname realName showRealIdentity hostelBlock avatarUrl');
+    await listing.populate([
+      { path: 'seller', select: 'displayName anonymousNickname realName showRealIdentity hostelBlock avatarUrl' },
+      { path: 'relatedDemand', select: 'title description budgetMin budgetMax buyer', populate: { path: 'buyer', select: 'displayName' } },
+    ]);
 
     res.status(201).json({ message: 'Listing created!', listing });
   } catch (error) {
