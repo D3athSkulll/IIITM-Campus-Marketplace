@@ -16,6 +16,7 @@ const {
   closeAuction,
   getMyListings,
   enableAuction,
+  linkDemand,
 } = require('../controllers/listingController');
 
 // Public routes
@@ -34,5 +35,6 @@ router.delete('/:id/auction-request', auth, withdrawAuctionRequest);
 router.put('/:id/auction', auth, enableAuction);
 router.post('/:id/auction/bid', auth, placeAuctionBid);
 router.post('/:id/auction/close', auth, closeAuction);
+router.put('/:id/link-demand', auth, linkDemand);
 
 module.exports = router;

@@ -249,6 +249,13 @@ const listingSchema = new mongoose.Schema(
       default: [],
       select: false, // Don't send this in API responses
     },
+
+    // ── Demand Linking ────────────────────────────────────────────────────────
+    relatedDemand: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'BuyerDemand',
+      default: null,
+    },
   },
   {
     timestamps: true,

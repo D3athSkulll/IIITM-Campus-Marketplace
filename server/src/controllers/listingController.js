@@ -806,6 +806,37 @@ const enableAuction = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/listings/:id/link-demand
+ * Link a demand to a listing (seller only)
+ */
+const linkDemand = async (req, res) => {
+  try {
+    const { demandId } = req.body;
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return res.status(404).json({ error: 'Listing not found.' });
+
+    if (listing.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the seller can link demands.' });
+    }
+
+    if (demandId) {
+      const BuyerDemand = require('../models/BuyerDemand');
+      const demand = await BuyerDemand.findById(demandId);
+      if (!demand) return res.status(404).json({ error: 'Demand not found.' });
+    }
+
+    listing.relatedDemand = demandId || null;
+    await listing.save();
+
+    await listing.populate('relatedDemand');
+    res.json({ message: 'Demand linked!', listing });
+  } catch (error) {
+    console.error('linkDemand error:', error);
+    res.status(500).json({ error: 'Failed to link demand.' });
+  }
+};
+
 module.exports = {
   getListings,
   getListing,
@@ -820,4 +851,5 @@ module.exports = {
   closeAuction,
   getMyListings,
   enableAuction,
+  linkDemand,
 };
