@@ -39,6 +39,7 @@ const USERS = [
     anonymousNickname: 'Heatblast42',
     hostelBlock: 'BH-1',
     showRealIdentity: false,
+    role: 'admin',
     totalTrades: 7,
     ratingSum: 33,
     ratingCount: 7,
