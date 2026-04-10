@@ -143,7 +143,7 @@ function HomePageInner() {
         </div>
 
         {/* Category pills */}
-        <div className="flex gap-2 pb-1 overflow-x-auto sm:overflow-x-visible -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+        <div className="flex gap-2 pb-1 mt-4 overflow-x-auto sm:overflow-x-visible -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.value}

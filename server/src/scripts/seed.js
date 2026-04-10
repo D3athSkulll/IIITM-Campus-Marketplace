@@ -39,7 +39,6 @@ const USERS = [
     anonymousNickname: 'Heatblast42',
     hostelBlock: 'BH-1',
     showRealIdentity: false,
-    role: 'admin',
     totalTrades: 7,
     ratingSum: 33,
     ratingCount: 7,
@@ -91,6 +90,19 @@ const USERS = [
     totalTrades: 1,
     ratingSum: 4,
     ratingCount: 1,
+  },
+  {
+    email: 'admin@iiitm.ac.in',
+    passwordHash: 'admin@123',
+    realName: 'Campus Admin',
+    phone: '+91 90000 00000',
+    anonymousNickname: 'AdminAlien999',
+    hostelBlock: 'BH-1',
+    showRealIdentity: false,
+    role: 'admin',
+    totalTrades: 0,
+    ratingSum: 0,
+    ratingCount: 0,
   },
 ];
 

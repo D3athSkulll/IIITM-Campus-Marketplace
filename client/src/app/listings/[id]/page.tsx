@@ -202,7 +202,7 @@ export default function ListingDetailPage() {
       mentionTimerRef.current = setTimeout(async () => {
         try {
           const data = await api<any>(`/users/search?q=${encodeURIComponent(q)}`, token ? { token } : undefined);
-          const results = data.users || [];
+          let results = data.users || [];
 
           // Get seller ID and previous commenters IDs
           const sellerId = listing?.seller?._id;

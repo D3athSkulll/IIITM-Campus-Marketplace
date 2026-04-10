@@ -115,7 +115,7 @@ export default function RegisterPage() {
                 required
                 minLength={6}
                 autoComplete="new-password"
-                className="pr-10 placeholder:text-gray-400"
+                className="pr-10 placeholder:text-gray-400 placeholder:opacity-60"
               />
               <button
                 type="button"

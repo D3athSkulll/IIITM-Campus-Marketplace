@@ -8,7 +8,7 @@
  *   3. Copy your API key and set IMGBB_API_KEY in server/.env
  */
 
-const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const MAX_UPLOADS_PER_WINDOW = Number(process.env.MAX_UPLOADS_PER_HOUR || 30);
 const uploadRateMap = new Map();
@@ -67,7 +67,7 @@ async function uploadImage(req, res) {
   const estimatedBytes = Math.ceil((base64Data.length * 3) / 4);
   if (estimatedBytes > MAX_SIZE_BYTES) {
     return res.status(413).json({
-      error: `Image too large. Maximum size is 2 MB. Your image is ~${(estimatedBytes / 1024 / 1024).toFixed(1)} MB.`,
+      error: `Image too large. Maximum size is 4 MB. Your image is ~${(estimatedBytes / 1024 / 1024).toFixed(1)} MB.`,
     });
   }
 
