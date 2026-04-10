@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { api } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, token } = useAuth();
+  const { socket } = useSocket();
 
   // Listing state
   const [listing, setListing] = useState<any>(null);
@@ -134,6 +136,35 @@ export default function ListingDetailPage() {
   useEffect(() => {
     fetchComments();
   }, [fetchComments]);
+
+  // Real-time comment updates via Socket.IO
+  useEffect(() => {
+    if (!socket || !id) return;
+    socket.emit("join-listing", id);
+
+    const handleNewComment = ({ comment }: { comment: any }) => {
+      setComments((prev) => {
+        // avoid duplicates (own comment already added via fetchComments)
+        if (prev.some((c) => c._id === comment._id)) return prev;
+        return [comment, ...prev];
+      });
+      setCommentTotal((prev) => prev + 1);
+    };
+
+    const handleDeletedComment = ({ commentId }: { commentId: string }) => {
+      setComments((prev) => prev.filter((c) => c._id !== commentId));
+      setCommentTotal((prev) => Math.max(0, prev - 1));
+    };
+
+    socket.on("comment:new", handleNewComment);
+    socket.on("comment:deleted", handleDeletedComment);
+
+    return () => {
+      socket.emit("leave-listing", id);
+      socket.off("comment:new", handleNewComment);
+      socket.off("comment:deleted", handleDeletedComment);
+    };
+  }, [socket, id]);
 
   const handleStartChat = async () => {
     if (!user) { toast.error("Sign in to chat with the seller"); router.push("/login"); return; }
@@ -272,10 +303,14 @@ export default function ListingDetailPage() {
     if (!commentText.trim()) return;
     setSubmittingComment(true);
     try {
-      await api(`/listings/${id}/comments`, { method: "POST", body: { content: commentText.trim() }, token });
+      const data = await api<any>(`/listings/${id}/comments`, { method: "POST", body: { content: commentText.trim() }, token });
       setCommentText("");
       setMentionResults([]);
-      await fetchComments();
+      // Optimistically add the comment locally (socket will handle it for others)
+      if (data?.comment) {
+        setComments((prev) => prev.some((c) => c._id === data.comment._id) ? prev : [data.comment, ...prev]);
+        setCommentTotal((prev) => prev + 1);
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to post comment");
     } finally {
@@ -696,7 +731,7 @@ export default function ListingDetailPage() {
 
               {/* @mention dropdown */}
               {mentionResults.length > 0 && (
-                <div className="absolute left-2 top-full mt-1 z-30 w-72 border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557] overflow-hidden">
+                <div className="absolute left-2 top-full mt-1 z-30 w-72 border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557] max-h-64 overflow-y-auto">
                   {mentionResults.map((u: any) => {
                     const isSeller = listing?.seller?._id === u._id;
                     const isPreviousCommenter = comments.some((c: any) => c.author._id === u._id);
@@ -833,6 +868,7 @@ export default function ListingDetailPage() {
           >
             <button
               type="button"
+              aria-label="Close"
               onClick={() => setMentionPopup(null)}
               className="absolute top-2 right-2 p-1 rounded hover:bg-[#F1FAEE] text-[#1D3557]"
             >

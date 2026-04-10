@@ -92,6 +92,13 @@ const postComment = async (req, res) => {
       }
     }
 
+    // Broadcast new comment to everyone viewing this listing
+    try {
+      getIO().to(`listing:${req.params.id}`).emit('comment:new', { comment });
+    } catch {
+      // Socket not ready, ignore
+    }
+
     res.status(201).json({ comment });
   } catch (error) {
     console.error('postComment error:', error);
@@ -119,7 +126,16 @@ const deleteComment = async (req, res) => {
       return res.status(403).json({ error: 'You can only delete your own comments.' });
     }
 
+    const listingId = req.params.id;
+    const commentId = req.params.commentId;
     await comment.deleteOne();
+
+    try {
+      getIO().to(`listing:${listingId}`).emit('comment:deleted', { commentId });
+    } catch {
+      // Socket not ready, ignore
+    }
+
     res.json({ message: 'Comment deleted.' });
   } catch (error) {
     console.error('deleteComment error:', error);

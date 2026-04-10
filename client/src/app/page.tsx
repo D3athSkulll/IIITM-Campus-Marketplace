@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { api } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import ListingCard from "@/components/ListingCard";
@@ -44,6 +45,7 @@ type Tab = "listings" | "demands";
 
 function HomePageInner() {
   const { user, isLoading } = useAuth();
+  const { socket } = useSocket();
   const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<Tab>("listings");
@@ -57,6 +59,7 @@ function HomePageInner() {
   const [demandPages, setDemandPages] = useState(1);
   const [loadingListings, setLoadingListings] = useState(true);
   const [loadingDemands, setLoadingDemands] = useState(false);
+  const [newListingBanner, setNewListingBanner] = useState<{ title: string; sellerName: string } | null>(null);
 
   const fetchListings = useCallback(async (cat: string, q: string, page: number) => {
     setLoadingListings(true);
@@ -97,6 +100,21 @@ function HomePageInner() {
     if (tab === "demands") fetchDemands(category, demandPage);
   }, [tab, category, demandPage, fetchDemands]);
 
+  // Real-time new listing banner
+  useEffect(() => {
+    if (!socket) return;
+    const handleNewListing = (listing: any) => {
+      // Don't show banner for own listings
+      if (user && listing.seller?._id === user._id) return;
+      const sellerName = listing.seller?.displayName || listing.seller?.anonymousNickname || "Someone";
+      setNewListingBanner({ title: listing.title, sellerName });
+      const timer = setTimeout(() => setNewListingBanner(null), 8000);
+      return () => clearTimeout(timer);
+    };
+    socket.on("listing:new", handleNewListing);
+    return () => { socket.off("listing:new", handleNewListing); };
+  }, [socket, user]);
+
   const handleSearch = (q: string) => { setSearch(q); setListingPage(1); };
   const handleCategory = (cat: string) => { setCategory(cat); setListingPage(1); setDemandPage(1); };
 
@@ -105,6 +123,33 @@ function HomePageInner() {
       <Navbar onSearch={handleSearch} searchValue={search} />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-5 space-y-5">
+
+        {/* New listing real-time banner */}
+        {newListingBanner && (
+          <div className="flex items-center gap-3 border-2 border-[#2A9D8F] bg-[var(--surface)] rounded-md px-4 py-3 shadow-[4px_4px_0px_0px_#2A9D8F] animate-fade-up">
+            <span className="text-lg">🆕</span>
+            <p className="flex-1 text-sm font-bold text-[#1D3557]">
+              <span className="text-[#2A9D8F]">{newListingBanner.sellerName}</span> just listed{" "}
+              <span className="font-black">"{newListingBanner.title}"</span>
+            </p>
+            <button
+              type="button"
+              aria-label="Refresh listings"
+              onClick={() => { fetchListings(category, search, listingPage); setNewListingBanner(null); }}
+              className="text-xs font-black text-[#2A9D8F] underline hover:no-underline whitespace-nowrap"
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => setNewListingBanner(null)}
+              className="text-[#1D3557]/50 hover:text-[#1D3557] font-black text-sm"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Hero */}
         <div className="rounded-md bg-[var(--surface)] border-2 border-[#1D3557] shadow-[6px_6px_0px_0px_#1D3557] px-6 py-8 sm:py-10 text-[#1D3557] animate-fade-up">

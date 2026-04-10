@@ -1,6 +1,7 @@
 const Listing = require('../models/Listing');
 const { CATEGORIES, CONDITIONS, LISTING_TYPES } = require('../models/Listing');
 const Transaction = require('../models/Transaction');
+const { getIO } = require('../socket');
 
 const MAX_ACTIVE_LISTINGS = Number(process.env.MAX_ACTIVE_LISTINGS || 25);
 
@@ -339,6 +340,23 @@ const createListing = async (req, res) => {
       { path: 'seller', select: 'displayName anonymousNickname realName showRealIdentity hostelBlock avatarUrl' },
       { path: 'relatedDemand', select: 'title description budgetMin budgetMax buyer', populate: { path: 'buyer', select: 'displayName' } },
     ]);
+
+    // Broadcast new listing to all connected clients
+    try {
+      getIO().emit('listing:new', {
+        _id: listing._id,
+        title: listing.title,
+        price: listing.price,
+        category: listing.category,
+        condition: listing.condition,
+        images: listing.images,
+        seller: listing.seller,
+        listingType: listing.listingType,
+        createdAt: listing.createdAt,
+      });
+    } catch {
+      // Socket not ready, ignore
+    }
 
     res.status(201).json({ message: 'Listing created!', listing });
   } catch (error) {

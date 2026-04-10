@@ -182,6 +182,7 @@ const sendMessage = async (req, res) => {
       type: 'message',
       chatId: req.params.id,
       message: populatedMsg,
+      senderId: req.user._id.toString(),
     });
 
     // Send notification to recipient

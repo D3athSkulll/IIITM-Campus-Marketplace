@@ -13,8 +13,19 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ─── Middleware ──────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'https://campus-market-iiit.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    // Also allow any vercel.app previews for this project
+    if (origin.includes('campus-market') || origin.includes('iiitm')) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -58,7 +69,11 @@ const httpServer = http.createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+      if (origin.includes('campus-market') || origin.includes('iiitm')) return callback(null, true);
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   },
 });
@@ -89,6 +104,15 @@ io.on('connection', (socket) => {
 
   socket.on('leave-chat', (chatId) => {
     if (chatId) socket.leave(`chat:${chatId}`);
+  });
+
+  // Client joins a listing room to receive comment updates
+  socket.on('join-listing', (listingId) => {
+    if (listingId) socket.join(`listing:${listingId}`);
+  });
+
+  socket.on('leave-listing', (listingId) => {
+    if (listingId) socket.leave(`listing:${listingId}`);
   });
 
   // Typing indicator

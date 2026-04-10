@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -15,6 +15,9 @@ export default function ChatsListPage() {
   const { socket } = useSocket();
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadChatIds, setUnreadChatIds] = useState<Set<string>>(new Set());
+  // track joined rooms so we don't re-join on every render
+  const joinedRooms = useRef<Set<string>>(new Set());
 
   const fetchChats = useCallback(async () => {
     if (!token) return;
@@ -33,18 +36,22 @@ export default function ChatsListPage() {
     fetchChats();
   }, [authLoading, user, token, fetchChats]);
 
-  // Re-sort chats list when any chat gets a new message
+  // Join new chat rooms and listen for updates
   useEffect(() => {
     if (!socket || !chats.length) return;
 
-    // Join all chat rooms to receive updates
-    chats.forEach((c) => socket.emit("join-chat", c._id));
+    // Join only rooms we haven't joined yet
+    chats.forEach((c) => {
+      if (!joinedRooms.current.has(c._id)) {
+        socket.emit("join-chat", c._id);
+        joinedRooms.current.add(c._id);
+      }
+    });
 
-    const handleUpdate = (payload: { chatId: string; message?: any }) => {
+    const handleUpdate = (payload: { chatId: string; message?: any; senderId?: string }) => {
       setChats((prev) => {
         const idx = prev.findIndex((c) => c._id === payload.chatId);
         if (idx === -1) {
-          // Unknown chat — full refresh
           fetchChats();
           return prev;
         }
@@ -54,16 +61,20 @@ export default function ChatsListPage() {
           updated.lastMessageAt = payload.message.createdAt || new Date().toISOString();
         }
         const rest = prev.filter((_, i) => i !== idx);
-        return [updated, ...rest]; // bubble to top
+        return [updated, ...rest];
       });
+
+      // Mark as unread if the message came from the other person
+      if (payload.senderId && user && payload.senderId !== user._id) {
+        setUnreadChatIds((prev) => new Set(prev).add(payload.chatId));
+      }
     };
 
     socket.on("chat:updated", handleUpdate);
     return () => {
       socket.off("chat:updated", handleUpdate);
     };
-  }, [socket, chats.length, fetchChats]);
-
+  }, [socket, chats.length, fetchChats, user]);
 
   if (authLoading || loading) {
     return (
@@ -95,33 +106,52 @@ export default function ChatsListPage() {
             {chats.map((chat) => {
               const other = user._id === chat.buyer._id ? chat.seller : chat.buyer;
               const lastMsg = chat.messages[chat.messages.length - 1];
+              const hasUnread = unreadChatIds.has(chat._id);
               return (
-                <Link key={chat._id} href={`/chats/${chat._id}`}>
-                  <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-[#1D3557] bg-[var(--surface)] hover:shadow-sm transition-shadow cursor-pointer">
-                    <div className="w-10 h-10 rounded-full bg-[var(--navy)] flex items-center justify-center text-[#1D3557] text-sm font-bold shrink-0 border border-[#1D3557]">
-                      {other.avatarUrl
-                        ? <img src={other.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
-                        : other.displayName[0].toUpperCase()
-                      }
+                <Link
+                  key={chat._id}
+                  href={`/chats/${chat._id}`}
+                  onClick={() =>
+                    setUnreadChatIds((prev) => {
+                      const next = new Set(prev);
+                      next.delete(chat._id);
+                      return next;
+                    })
+                  }
+                >
+                  <div className={`flex items-center gap-3 p-4 rounded-xl border-2 bg-[var(--surface)] hover:shadow-sm transition-shadow cursor-pointer ${hasUnread ? "border-[#E63946] shadow-[2px_2px_0px_0px_#E63946]" : "border-[#1D3557]"}`}>
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-[var(--navy)] flex items-center justify-center text-[#1D3557] text-sm font-bold border border-[#1D3557]">
+                        {other.avatarUrl
+                          ? <img src={other.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                          : other.displayName[0].toUpperCase()
+                        }
+                      </div>
+                      {hasUnread && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#E63946] rounded-full border-2 border-white" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">{other.displayName}</span>
+                        <span className={`font-semibold text-sm ${hasUnread ? "text-[#E63946]" : ""}`}>{other.displayName}</span>
                         <span className="text-xs text-muted-foreground">
                           {new Date(chat.lastMessageAt).toLocaleDateString()}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{chat.listing?.title}</p>
                       {lastMsg && (
-                        <p className="text-xs text-muted-foreground/80 truncate mt-0.5">{lastMsg.content}</p>
+                        <p className={`text-xs truncate mt-0.5 ${hasUnread ? "font-semibold text-[#1D3557]" : "text-muted-foreground/80"}`}>{lastMsg.content}</p>
                       )}
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex flex-col items-end gap-1">
                       {chat.mode === "negotiation" && (
                         <Badge className="bg-[var(--gold)] text-[#1D3557] text-[10px]">Negotiating</Badge>
                       )}
                       {chat.status === "completed" && (
                         <Badge variant="outline" className="text-[#1D3557] border-[#D8E2DC] text-[10px]">Deal ✓</Badge>
+                      )}
+                      {hasUnread && (
+                        <Badge className="bg-[#E63946] text-white text-[10px]">New</Badge>
                       )}
                     </div>
                   </div>
