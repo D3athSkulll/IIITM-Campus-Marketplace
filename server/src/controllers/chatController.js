@@ -158,11 +158,27 @@ const sendMessage = async (req, res) => {
     await chat.populate('messages.sender', 'displayName anonymousNickname realName showRealIdentity avatarUrl');
     const populatedMsg = chat.messages[chat.messages.length - 1];
 
+    // Broadcast message update to chat room
     broadcastChatUpdate(req.params.id, {
       type: 'message',
       chatId: req.params.id,
       message: populatedMsg,
     });
+
+    // Send notification to recipient
+    const recipientId = chat.buyer.toString() === req.user._id.toString() ? chat.seller : chat.buyer;
+    const senderName = req.user.displayName || 'Someone';
+    try {
+      getIO().to(`user:${recipientId}`).emit('message-notification', {
+        chatId: req.params.id,
+        senderId: req.user._id,
+        senderName,
+        message: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+        timestamp: new Date(),
+      });
+    } catch {
+      // Socket not ready, ignore
+    }
 
     res.json({ message: newMessage });
   } catch (error) {

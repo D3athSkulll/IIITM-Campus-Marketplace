@@ -77,6 +77,11 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
+  const userId = socket.userId;
+
+  // Join user room for notifications
+  if (userId) socket.join(`user:${userId}`);
+
   // Client joins a chat room to receive real-time events
   socket.on('join-chat', (chatId) => {
     if (chatId) socket.join(`chat:${chatId}`);
@@ -84,6 +89,40 @@ io.on('connection', (socket) => {
 
   socket.on('leave-chat', (chatId) => {
     if (chatId) socket.leave(`chat:${chatId}`);
+  });
+
+  // Typing indicator
+  socket.on('typing', (chatId) => {
+    if (chatId) {
+      socket.to(`chat:${chatId}`).emit('user-typing', {
+        userId,
+        chatId,
+      });
+    }
+  });
+
+  socket.on('stop-typing', (chatId) => {
+    if (chatId) {
+      socket.to(`chat:${chatId}`).emit('user-stopped-typing', {
+        userId,
+        chatId,
+      });
+    }
+  });
+
+  // User online status
+  socket.on('user-online', () => {
+    socket.broadcast.emit('user-status', {
+      userId,
+      status: 'online',
+    });
+  });
+
+  socket.on('disconnect', () => {
+    socket.broadcast.emit('user-status', {
+      userId,
+      status: 'offline',
+    });
   });
 });
 

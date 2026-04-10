@@ -32,8 +32,11 @@ export default function ChatPage() {
   const [showNegotiatePrompt, setShowNegotiatePrompt] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [showInfoBanner, setShowInfoBanner] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Prevent duplicate fetches when socket fires while a fetch is in-flight
   const fetchingRef = useRef(false);
 
@@ -97,11 +100,23 @@ export default function ChatPage() {
       }
     };
 
+    const handleUserTyping = () => {
+      setOtherUserTyping(true);
+    };
+
+    const handleUserStoppedTyping = () => {
+      setOtherUserTyping(false);
+    };
+
     socket.on("chat:updated", handleUpdate);
+    socket.on("user-typing", handleUserTyping);
+    socket.on("user-stopped-typing", handleUserStoppedTyping);
 
     return () => {
       socket.emit("leave-chat", id);
       socket.off("chat:updated", handleUpdate);
+      socket.off("user-typing", handleUserTyping);
+      socket.off("user-stopped-typing", handleUserStoppedTyping);
     };
   }, [socket, id, fetchChat]);
 
@@ -110,9 +125,32 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chat?.messages]);
 
+  const handleTextChange = (value: string) => {
+    setText(value);
+
+    if (socket && id) {
+      if (value.trim() && !isTyping) {
+        setIsTyping(true);
+        socket.emit("typing", id);
+      } else if (!value.trim() && isTyping) {
+        setIsTyping(false);
+        socket.emit("stop-typing", id);
+      }
+
+      // Clear typing timeout and set a new one
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        socket.emit("stop-typing", id);
+      }, 1500);
+    }
+  };
+
   const sendMessage = async (content: string, type: "text" | "quick-reply" = "text") => {
     if (!content.trim()) return;
     setSendingMsg(true);
+    setIsTyping(false);
+    if (socket && id) socket.emit("stop-typing", id);
     try {
       await api<any>(`/chats/${id}/message`, { method: "POST", body: { content, type }, token });
       setText("");
@@ -370,6 +408,13 @@ export default function ChatPage() {
               </div>
             );
           })}
+          {otherUserTyping && (
+            <div className="flex justify-start">
+              <div className="text-xs font-bold text-[#1D3557] italic py-1 px-2">
+                {other.displayName} is typing…
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -465,7 +510,7 @@ export default function ChatPage() {
             <Input
               placeholder="Type a message…"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => handleTextChange(e.target.value)}
               className="flex-1"
               disabled={sendingMsg || uploadingPhoto}
               aria-label="Message text"
