@@ -7,6 +7,7 @@ import { SocketProvider } from "@/context/SocketContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import BottomNav from "@/components/BottomNav";
 import NotificationBanner from "@/components/NotificationBanner";
+import GlobalNotifications from "@/components/GlobalNotifications";
 import Script from "next/script";
 
 const publicSans = Public_Sans({
@@ -75,6 +76,7 @@ export default function RootLayout({
         <AuthProvider>
           <NotificationProvider>
             <SocketProvider>
+              <GlobalNotifications />
               <NotificationBanner />
               {children}
               <BottomNav />

@@ -171,9 +171,20 @@ export default function ChatPage() {
     });
 
     try {
-      await api<any>(`/chats/${id}/message`, { method: "POST", body: { content, type }, token });
+      const result = await api<any>(`/chats/${id}/message`, { method: "POST", body: { content, type }, token });
       setText("");
-      // Socket will handle the real-time update; just ensure we're synced
+      // Replace temp message with confirmed server message so socket dedup works
+      if (result?.message) {
+        setChat((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            messages: prev.messages.map((m: any) =>
+              m._id === tempMessage._id ? result.message : m
+            ),
+          };
+        });
+      }
     } catch (err: unknown) {
       // Remove optimistic message on error
       setChat((prev: any) => {
@@ -214,11 +225,22 @@ export default function ChatPage() {
         };
       });
 
-      await api<any>(`/chats/${id}/message`, {
+      const photoResult = await api<any>(`/chats/${id}/message`, {
         method: "POST",
         body: { content: "Photo", type: "image", imageUrl: url },
         token,
       });
+      if (photoResult?.message) {
+        setChat((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            messages: prev.messages.map((m: any) =>
+              m._id === tempMessage._id ? photoResult.message : m
+            ),
+          };
+        });
+      }
       toast.success("Photo sent!");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to send photo");

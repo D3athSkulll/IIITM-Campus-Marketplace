@@ -46,15 +46,27 @@ function timeAgo(iso: string) {
   return `${d}d ago`;
 }
 
-function renderMentions(content: string) {
+function renderMentions(
+  content: string,
+  mentionsMap: Record<string, any>,
+  onMentionClick: (nickname: string, userData: any) => void
+) {
   const parts = content.split(/(@[\w-]+)/g);
-  return parts.map((part, i) =>
-    part.startsWith("@") ? (
-      <span key={i} className="font-black text-[#2A9D8F]">{part}</span>
-    ) : (
-      <span key={i}>{part}</span>
-    )
-  );
+  return parts.map((part, i) => {
+    if (!part.startsWith("@")) return <span key={i}>{part}</span>;
+    const nickname = part.slice(1).toLowerCase();
+    const userData = mentionsMap[nickname];
+    return (
+      <button
+        key={i}
+        type="button"
+        onClick={() => onMentionClick(part.slice(1), userData)}
+        className="font-black text-[#2A9D8F] hover:underline cursor-pointer bg-transparent border-none p-0 inline"
+      >
+        {part}
+      </button>
+    );
+  });
 }
 
 export default function ListingDetailPage() {
@@ -84,6 +96,7 @@ export default function ListingDetailPage() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [deletingComment, setDeletingComment] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<any[]>([]);
+  const [mentionPopup, setMentionPopup] = useState<{ nickname: string; userId?: string; displayName?: string; avatarUrl?: string } | null>(null);
   const mentionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -196,29 +209,42 @@ export default function ListingDetailPage() {
     const before = val.slice(0, cursor);
     const match = before.match(/@([\w-]*)$/);
 
-    if (match && match[1].length >= 1) {
+    if (match) {
       const q = match[1];
       if (mentionTimerRef.current) clearTimeout(mentionTimerRef.current);
+
+      // For bare @ with no query, show seller + commenters from loaded data instantly
+      if (q.length === 0) {
+        const seen = new Set<string>();
+        const suggestions: any[] = [];
+        if (listing?.seller) {
+          seen.add(listing.seller._id);
+          suggestions.push(listing.seller);
+        }
+        for (const c of comments) {
+          if (!seen.has(c.author._id)) {
+            seen.add(c.author._id);
+            suggestions.push(c.author);
+          }
+        }
+        setMentionResults(suggestions.slice(0, 10));
+        return;
+      }
+
       mentionTimerRef.current = setTimeout(async () => {
         try {
           const data = await api<any>(`/users/search?q=${encodeURIComponent(q)}`, token ? { token } : undefined);
           let results = data.users || [];
 
-          // Get seller ID and previous commenters IDs
+          // Sort: seller first, then previous commenters, then others
           const sellerId = listing?.seller?._id;
           const commenterIds = new Set(comments.map((c: any) => c.author._id));
-
-          // Sort: seller first, then previous commenters, then others
           const sorted = results.sort((a: any, b: any) => {
             const aIsSeller = a._id === sellerId ? 1 : 0;
             const bIsSeller = b._id === sellerId ? 1 : 0;
             if (aIsSeller !== bIsSeller) return bIsSeller - aIsSeller;
-
-            const aIsCommenter = commenterIds.has(a._id) ? 1 : 0;
-            const bIsCommenter = commenterIds.has(b._id) ? 1 : 0;
-            return bIsCommenter - aIsCommenter;
+            return (commenterIds.has(b._id) ? 1 : 0) - (commenterIds.has(a._id) ? 1 : 0);
           });
-
           setMentionResults(sorted);
         } catch {
           setMentionResults([]);
@@ -740,6 +766,13 @@ export default function ListingDetailPage() {
                 const authorAvatar = comment.author.avatarUrl ||
                   `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(comment.author.displayName || comment.author.anonymousNickname)}&backgroundColor=1D3557`;
                 const canDelete = user && (user._id === comment.author._id || (user as any).role === "admin");
+                // Build a map: lowercase nickname -> user data for this comment's mentions
+                const mentionsMap: Record<string, any> = {};
+                if (comment.mentions) {
+                  for (const m of comment.mentions) {
+                    if (m.anonymousNickname) mentionsMap[m.anonymousNickname.toLowerCase()] = m;
+                  }
+                }
 
                 return (
                   <div
@@ -758,7 +791,14 @@ export default function ListingDetailPage() {
                           <span className="text-[10px] font-medium text-[#1D3557]/50">{timeAgo(comment.createdAt)}</span>
                         </div>
                         <p className="text-sm font-medium text-[#1D3557] mt-1 leading-relaxed whitespace-pre-wrap break-words">
-                          {renderMentions(comment.content)}
+                          {renderMentions(comment.content, mentionsMap, (nickname, userData) => {
+                            setMentionPopup({
+                              nickname,
+                              userId: userData?._id,
+                              displayName: userData?.displayName || userData?.anonymousNickname || nickname,
+                              avatarUrl: userData?.avatarUrl,
+                            });
+                          })}
                         </p>
                       </div>
                       {canDelete && (
@@ -780,6 +820,65 @@ export default function ListingDetailPage() {
           )}
         </div>
       </div>
+
+      {/* @mention user card popup */}
+      {mentionPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          onClick={() => setMentionPopup(null)}
+        >
+          <div
+            className="relative bg-[var(--surface)] border-2 border-[#1D3557] rounded-md shadow-[6px_6px_0px_0px_#1D3557] p-4 w-64 space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setMentionPopup(null)}
+              className="absolute top-2 right-2 p-1 rounded hover:bg-[#F1FAEE] text-[#1D3557]"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-md border-2 border-[#1D3557] overflow-hidden bg-[var(--surface-alt)] shrink-0">
+                <img
+                  src={mentionPopup.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(mentionPopup.nickname)}&backgroundColor=1D3557`}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <div className="font-black text-sm text-[#1D3557]">{mentionPopup.displayName}</div>
+                <div className="text-[10px] font-medium text-[#1D3557]/60">@{mentionPopup.nickname}</div>
+              </div>
+            </div>
+            {mentionPopup.userId && mentionPopup.userId !== user?._id && (
+              <Button
+                size="sm"
+                className="w-full font-black gap-1.5"
+                disabled={chatLoading}
+                onClick={async () => {
+                  if (!user) { toast.error("Sign in to chat"); router.push("/login"); return; }
+                  setChatLoading(true);
+                  try {
+                    const data = await api<any>("/chats", { method: "POST", body: { userId: mentionPopup.userId }, token });
+                    setMentionPopup(null);
+                    router.push(`/chats/${data.chat._id}`);
+                  } catch (err: unknown) {
+                    toast.error(err instanceof Error ? err.message : "Failed to start chat");
+                  } finally {
+                    setChatLoading(false);
+                  }
+                }}
+              >
+                <MessageCircle className="w-3.5 h-3.5" /> Chat with them
+              </Button>
+            )}
+            {!mentionPopup.userId && (
+              <p className="text-xs text-[#1D3557]/60 font-medium text-center">No profile data available</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useSocket } from "@/context/SocketContext";
-import { useNotification } from "@/context/NotificationContext";
 import { api } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +13,6 @@ import { MessageCircle } from "lucide-react";
 export default function ChatsListPage() {
   const { user, token, isLoading: authLoading } = useRequireAuth();
   const { socket } = useSocket();
-  const { addNotification } = useNotification();
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,25 +64,6 @@ export default function ChatsListPage() {
     };
   }, [socket, chats.length, fetchChats]);
 
-  // Listen for message notifications
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleMessageNotification = (data: { senderName: string; message: string; chatId: string }) => {
-      addNotification({
-        type: "info",
-        title: `Message from ${data.senderName}`,
-        message: data.message,
-        browser: true,
-        duration: 5000,
-      });
-    };
-
-    socket.on("message-notification", handleMessageNotification);
-    return () => {
-      socket.off("message-notification", handleMessageNotification);
-    };
-  }, [socket, addNotification]);
 
   if (authLoading || loading) {
     return (

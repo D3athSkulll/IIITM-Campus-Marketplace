@@ -1,6 +1,7 @@
 const Comment = require('../models/Comment');
 const User = require('../models/User');
 const Listing = require('../models/Listing');
+const { getIO } = require('../socket');
 
 /**
  * GET /api/listings/:id/comments
@@ -17,7 +18,7 @@ const getComments = async (req, res) => {
         .skip(skip)
         .limit(Number(limit))
         .populate('author', 'displayName anonymousNickname realName showRealIdentity avatarUrl hostelBlock')
-        .populate('mentions', 'displayName anonymousNickname realName showRealIdentity'),
+        .populate('mentions', 'displayName anonymousNickname realName showRealIdentity avatarUrl'),
       Comment.countDocuments({ listing: req.params.id }),
     ]);
 
@@ -43,23 +44,22 @@ const postComment = async (req, res) => {
       return res.status(400).json({ error: 'Comment cannot exceed 500 characters.' });
     }
 
-    const listing = await Listing.findById(req.params.id).select('_id status');
+    const listing = await Listing.findById(req.params.id).select('_id status title');
     if (!listing) return res.status(404).json({ error: 'Listing not found.' });
 
     // Parse @mentions: match @word (alphanumeric + hyphens + underscores)
     const mentionPattern = /@([\w-]+)/g;
     const rawMentions = [...content.matchAll(mentionPattern)].map((m) => m[1]);
 
-    let mentionIds = [];
+    let mentionedUsers = [];
     if (rawMentions.length > 0) {
-      // Find users by anonymousNickname (case-insensitive) or realName (only if they show real identity)
-      const users = await User.find({
+      mentionedUsers = await User.find({
         $or: [
           { anonymousNickname: { $in: rawMentions.map((m) => new RegExp(`^${m}$`, 'i')) } },
         ],
       }).select('_id anonymousNickname');
-      mentionIds = users.map((u) => u._id);
     }
+    const mentionIds = mentionedUsers.map((u) => u._id);
 
     const comment = await Comment.create({
       listing: req.params.id,
@@ -69,7 +69,28 @@ const postComment = async (req, res) => {
     });
 
     await comment.populate('author', 'displayName anonymousNickname realName showRealIdentity avatarUrl hostelBlock');
-    await comment.populate('mentions', 'displayName anonymousNickname realName showRealIdentity');
+    await comment.populate('mentions', 'displayName anonymousNickname realName showRealIdentity avatarUrl');
+
+    // Emit real-time mention notifications to each mentioned user
+    if (mentionedUsers.length > 0) {
+      const authorName = req.user.displayName || req.user.anonymousNickname || 'Someone';
+      const preview = content.trim().substring(0, 80) + (content.trim().length > 80 ? '…' : '');
+      try {
+        for (const mentioned of mentionedUsers) {
+          if (mentioned._id.toString() !== req.user._id.toString()) {
+            getIO().to(`user:${mentioned._id}`).emit('mention-notification', {
+              listingId: req.params.id,
+              listingTitle: listing.title || 'a listing',
+              authorName,
+              content: preview,
+              timestamp: new Date(),
+            });
+          }
+        }
+      } catch {
+        // Socket not ready, ignore
+      }
+    }
 
     res.status(201).json({ comment });
   } catch (error) {

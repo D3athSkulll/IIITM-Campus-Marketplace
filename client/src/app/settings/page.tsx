@@ -48,6 +48,10 @@ export default function SettingsPage() {
   const [editingName, setEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
 
+  const [nickname, setNickname] = useState(user?.anonymousNickname || "");
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [savingNickname, setSavingNickname] = useState(false);
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/login");
@@ -133,12 +137,30 @@ export default function SettingsPage() {
     setSavingName(true);
     try {
       await api("/auth/profile", { method: "PUT", body: { realName }, token });
-      toast.success("Username updated!");
+      toast.success("Name updated!");
       setEditingName(false);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to update username");
+      toast.error(err instanceof Error ? err.message : "Failed to update name");
     } finally {
       setSavingName(false);
+    }
+  };
+
+  const handleSaveNickname = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nickname.trim()) {
+      toast.error("Nickname cannot be empty");
+      return;
+    }
+    setSavingNickname(true);
+    try {
+      await api("/auth/profile", { method: "PUT", body: { anonymousNickname: nickname }, token });
+      toast.success("Nickname updated!");
+      setEditingNickname(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update nickname");
+    } finally {
+      setSavingNickname(false);
     }
   };
 
@@ -290,6 +312,46 @@ export default function SettingsPage() {
                         />
                         <Button type="submit" disabled={savingPhone} className="w-full font-black">
                           {savingPhone ? "Saving..." : "Update Phone"}
+                        </Button>
+                      </form>
+                    )}
+                  </div>
+
+                  <div className="border-t-2 border-[#1D3557] pt-3 mt-3">
+                    <div className="flex items-center justify-between p-3 border-2 border-[#1D3557] rounded-md bg-[var(--surface)]">
+                      <div>
+                        <div className="font-black text-sm">Anonymous Nickname</div>
+                        <div className="text-xs text-[#1D3557] font-medium mt-0.5">
+                          @{nickname || user.anonymousNickname}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={editingNickname ? "outline" : "default"}
+                        onClick={() => setEditingNickname(!editingNickname)}
+                        className="font-black"
+                      >
+                        {editingNickname ? "Cancel" : "Edit"}
+                      </Button>
+                    </div>
+                    {editingNickname && (
+                      <form onSubmit={handleSaveNickname} className="space-y-2 mt-3">
+                        <Input
+                          type="text"
+                          placeholder="AlienName123"
+                          value={nickname}
+                          onChange={(e) => setNickname(e.target.value)}
+                          required
+                          minLength={3}
+                          maxLength={30}
+                          className="placeholder:text-gray-400"
+                        />
+                        <p className="text-[10px] text-[#1D3557] font-medium">
+                          Letters, numbers, hyphens, underscores only. This is your anonymous identity shown to others.
+                        </p>
+                        <Button type="submit" disabled={savingNickname} className="w-full font-black">
+                          {savingNickname ? "Saving..." : "Update Nickname"}
                         </Button>
                       </form>
                     )}

@@ -254,7 +254,7 @@ const changePassword = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
   try {
-    const { showRealIdentity, hostelBlock, avatarUrl, phone, realName } = req.body;
+    const { showRealIdentity, hostelBlock, avatarUrl, phone, realName, anonymousNickname } = req.body;
     const user = req.user;
 
     if (showRealIdentity !== undefined) user.showRealIdentity = !!showRealIdentity;
@@ -262,6 +262,24 @@ const updateProfile = async (req, res) => {
     if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
     if (phone !== undefined) user.phone = phone.trim();
     if (realName !== undefined) user.realName = realName.trim();
+
+    if (anonymousNickname !== undefined) {
+      const trimmed = anonymousNickname.trim();
+      if (!trimmed || trimmed.length < 3) {
+        return res.status(400).json({ error: 'Nickname must be at least 3 characters.' });
+      }
+      if (!/^[\w-]+$/.test(trimmed)) {
+        return res.status(400).json({ error: 'Nickname can only contain letters, numbers, hyphens, and underscores.' });
+      }
+      const existing = await User.findOne({
+        anonymousNickname: new RegExp(`^${trimmed}$`, 'i'),
+        _id: { $ne: user._id },
+      });
+      if (existing) {
+        return res.status(409).json({ error: 'This nickname is already taken.' });
+      }
+      user.anonymousNickname = trimmed;
+    }
 
     await user.save();
 
