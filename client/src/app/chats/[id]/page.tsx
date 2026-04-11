@@ -9,6 +9,7 @@ import { useSocket } from "@/context/SocketContext";
 import { api } from "@/lib/api";
 import { uploadImage } from "@/lib/uploadImage";
 import Navbar from "@/components/Navbar";
+import ImageLightbox from "@/components/ImageLightbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,6 +33,7 @@ export default function ChatPage() {
   const [showNegotiatePrompt, setShowNegotiatePrompt] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [showInfoBanner, setShowInfoBanner] = useState(true);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -489,12 +491,17 @@ export default function ChatPage() {
             if (msg.type === "image" && msg.imageUrl) {
               return (
                 <div key={msg._id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                  <div className="rounded-md border-2 border-[#1D3557] overflow-hidden shadow-[2px_2px_0px_0px_#1D3557] max-w-[60%]">
+                  <button
+                    type="button"
+                    onClick={() => setLightboxSrc(msg.imageUrl)}
+                    className="rounded-md border-2 border-[#1D3557] overflow-hidden shadow-[2px_2px_0px_0px_#1D3557] max-w-[60%] cursor-zoom-in hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                    aria-label="Open photo"
+                  >
                     <img src={msg.imageUrl} alt="Shared photo" className="w-full max-h-48 object-cover" loading="lazy" />
-                    <div className={`text-[10px] font-bold px-2 py-1 ${isMe ? "bg-[#2A9D8F] text-[#F1FAEE]" : "bg-[var(--surface-alt)] text-[#1D3557]"}`}>
-                      Photo
+                    <div className={`text-[10px] font-bold px-2 py-1 text-left ${isMe ? "bg-[#2A9D8F] text-[#F1FAEE]" : "bg-[var(--surface-alt)] text-[#1D3557]"}`}>
+                      Photo · tap to view
                     </div>
-                  </div>
+                  </button>
                 </div>
               );
             }
@@ -634,6 +641,7 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+      <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </div>
   );
 }

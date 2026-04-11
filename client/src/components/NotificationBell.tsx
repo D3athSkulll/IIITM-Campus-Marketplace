@@ -27,6 +27,9 @@ const iconMap: Record<Notification["type"], React.ReactNode> = {
 export default function NotificationBell() {
   const { history, clearHistory, removeHistoryItem } = useNotification();
   const [open, setOpen] = useState(false);
+  // Freeze the snapshot rendered while the panel is open so clearing-on-open
+  // doesn't make the list vanish under the user's nose.
+  const [snapshot, setSnapshot] = useState<Notification[]>([]);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -41,6 +44,14 @@ export default function NotificationBell() {
 
   const count = history.length;
 
+  const handleOpen = () => {
+    if (!open) {
+      setSnapshot(history);
+      clearHistory();
+    }
+    setOpen((p) => !p);
+  };
+
   const handleClick = (n: Notification) => {
     if (n.href) {
       router.push(n.href);
@@ -48,12 +59,19 @@ export default function NotificationBell() {
     }
   };
 
+  const handleRemove = (id: string) => {
+    setSnapshot((prev) => prev.filter((n) => n.id !== id));
+    removeHistoryItem(id);
+  };
+
+  const visibleCount = snapshot.length;
+
   return (
     <div className="relative" ref={ref}>
       <button
         type="button"
         aria-label="Notifications"
-        onClick={() => setOpen((p) => !p)}
+        onClick={handleOpen}
         className="relative p-2 rounded-md border-2 border-[#1D3557] bg-[var(--surface)] hover:bg-[var(--surface-alt)] shadow-[2px_2px_0px_0px_#1D3557] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all text-[#1D3557]"
       >
         <Bell className="w-4 h-4" />
@@ -65,29 +83,28 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-[var(--surface)] border-2 border-[#1D3557] rounded-md shadow-[4px_4px_0px_0px_#1D3557] z-50 overflow-hidden">
+        <div className="fixed sm:absolute left-2 right-2 top-16 sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 sm:max-w-[calc(100vw-2rem)] bg-[var(--surface)] border-2 border-[#1D3557] rounded-md shadow-[4px_4px_0px_0px_#1D3557] z-[60] overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b-2 border-[#1D3557] bg-[var(--surface-soft)]">
             <span className="font-black text-sm text-[#1D3557]">Notifications</span>
-            {count > 0 && (
-              <button
-                type="button"
-                onClick={clearHistory}
-                className="text-[10px] font-black text-[#E63946] hover:underline uppercase tracking-wide"
-              >
-                Clear All
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close notifications"
+              className="p-1 rounded hover:bg-[#E63946]/20 text-[#1D3557]"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <div className="max-h-96 overflow-y-auto">
-            {count === 0 ? (
+          <div className="max-h-[70vh] sm:max-h-96 overflow-y-auto">
+            {visibleCount === 0 ? (
               <div className="px-4 py-8 text-center text-xs font-medium text-[#1D3557]/60">
                 No notifications yet
               </div>
             ) : (
-              history.map((n) => (
+              snapshot.map((n) => (
                 <div
                   key={n.id}
-                  className="flex items-start gap-2 px-3 py-2.5 border-b border-[#1D3557]/20 hover:bg-[var(--surface-alt)] transition-colors group"
+                  className="flex items-start gap-2 px-3 py-2.5 border-b border-[#1D3557]/20 hover:bg-[var(--surface-alt)] transition-colors"
                 >
                   <div className="shrink-0 mt-0.5">{iconMap[n.type]}</div>
                   <button
@@ -102,10 +119,10 @@ export default function NotificationBell() {
                   <button
                     type="button"
                     aria-label="Dismiss notification"
-                    onClick={() => removeHistoryItem(n.id)}
-                    className="shrink-0 opacity-0 group-hover:opacity-100 p-1 hover:bg-[#E63946]/20 rounded transition-opacity text-[#E63946]"
+                    onClick={() => handleRemove(n.id)}
+                    className="shrink-0 p-1 hover:bg-[#E63946]/20 rounded text-[#E63946]"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))

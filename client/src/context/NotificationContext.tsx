@@ -11,6 +11,8 @@ export interface Notification {
   browser?: boolean; // Show browser notification
   href?: string; // Optional link to navigate on click
   createdAt?: string;
+  /** Stable dedup key — if set, replaces any existing history entry with the same key. */
+  key?: string;
 }
 
 interface NotificationContextType {
@@ -83,8 +85,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     setNotifications((prev) => [...prev, fullNotification]);
-    // Add to persistent history (newest first), trim to max size
-    setHistory((prev) => [fullNotification, ...prev].slice(0, MAX_HISTORY));
+    // Add to persistent history (newest first), trim to max size.
+    // If a `key` is provided, replace any existing entry with that key.
+    setHistory((prev) => {
+      const filtered = notification.key ? prev.filter((n) => n.key !== notification.key) : prev;
+      return [fullNotification, ...filtered].slice(0, MAX_HISTORY);
+    });
 
     if (notification.duration !== 0) {
       const timeout = notification.duration || 5000;

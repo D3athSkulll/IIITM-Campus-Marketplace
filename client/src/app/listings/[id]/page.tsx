@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { api } from "@/lib/api";
 import Navbar from "@/components/Navbar";
+import ImageLightbox from "@/components/ImageLightbox";
 import { Button } from "@/components/ui/button";
 import {
   MessageCircle,
@@ -86,6 +87,7 @@ export default function ListingDetailPage() {
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [imageIdx, setImageIdx] = useState(0);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   // Interaction state
   const [chatLoading, setChatLoading] = useState(false);
@@ -390,7 +392,12 @@ export default function ListingDetailPage() {
           <div className="space-y-3">
             <div className="relative aspect-square rounded-md overflow-hidden border-2 border-[#1D3557] shadow-[4px_4px_0px_0px_#1D3557] bg-[var(--surface-alt)]">
               {listing.images[imageIdx] ? (
-                <img src={listing.images[imageIdx]} alt={listing.title} className="w-full h-full object-cover" />
+                <img
+                  src={listing.images[imageIdx]}
+                  alt={listing.title}
+                  className="w-full h-full object-cover cursor-zoom-in"
+                  onClick={() => setLightboxSrc(listing.images[imageIdx])}
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center"><Package className="w-12 h-12 opacity-30" /></div>
               )}
@@ -872,7 +879,7 @@ export default function ListingDetailPage() {
       {/* @mention user card popup */}
       {mentionPopup && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/30"
           onClick={() => setMentionPopup(null)}
         >
           <div
@@ -928,6 +935,7 @@ export default function ListingDetailPage() {
           </div>
         </div>
       )}
+      <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </div>
   );
 }

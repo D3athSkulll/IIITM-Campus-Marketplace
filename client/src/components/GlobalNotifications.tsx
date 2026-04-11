@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/context/SocketContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useAuth } from "@/context/AuthContext";
 
 /**
- * Mounts invisibly in the layout. Listens for global socket events
- * (new messages, @mentions) and fires banner + browser notifications.
+ * Listens for global socket events and fires *coalesced* notifications:
+ * one "unread messages" entry across all chats, one "bargain progress"
+ * entry across all negotiations, and per-@mention entries.
  */
 export default function GlobalNotifications() {
   const { socket } = useSocket();
@@ -16,21 +17,37 @@ export default function GlobalNotifications() {
   const { user } = useAuth();
   const router = useRouter();
 
+  const unreadChatsRef = useRef<Set<string>>(new Set());
+  const bargainChatsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (!socket || !user) return;
 
-    const handleMessage = (data: {
-      senderName: string;
-      message: string;
-      chatId: string;
-    }) => {
+    const handleMessage = (data: { senderName: string; message: string; chatId: string }) => {
+      unreadChatsRef.current.add(data.chatId);
+      const n = unreadChatsRef.current.size;
       addNotification({
+        key: "unread-messages",
         type: "info",
-        title: `${data.senderName} sent a message`,
-        message: data.message,
+        title: n === 1 ? `New message from ${data.senderName}` : `${n} chats have new messages`,
+        message: n === 1 ? data.message : "Tap to view your chats",
         browser: true,
         duration: 5000,
-        href: `/chats/${data.chatId}`,
+        href: n === 1 ? `/chats/${data.chatId}` : "/chats",
+      });
+    };
+
+    const handleBargain = (data: { chatId: string; title?: string; detail?: string }) => {
+      bargainChatsRef.current.add(data.chatId);
+      const n = bargainChatsRef.current.size;
+      addNotification({
+        key: "bargain-progress",
+        type: "warning",
+        title: n === 1 ? (data.title || "Bargain update") : `${n} bargains have updates`,
+        message: data.detail || "Tap to view negotiation progress",
+        browser: true,
+        duration: 6000,
+        href: n === 1 ? `/chats/${data.chatId}` : "/chats",
       });
     };
 
@@ -52,12 +69,27 @@ export default function GlobalNotifications() {
 
     socket.on("message-notification", handleMessage);
     socket.on("mention-notification", handleMention);
+    socket.on("bargain-notification", handleBargain);
 
     return () => {
       socket.off("message-notification", handleMessage);
       socket.off("mention-notification", handleMention);
+      socket.off("bargain-notification", handleBargain);
     };
   }, [socket, user, addNotification, router]);
+
+  // Reset counters when the user visits /chats — they've seen them.
+  useEffect(() => {
+    const reset = () => {
+      if (typeof window !== "undefined" && window.location.pathname.startsWith("/chats")) {
+        unreadChatsRef.current.clear();
+        bargainChatsRef.current.clear();
+      }
+    };
+    reset();
+    window.addEventListener("popstate", reset);
+    return () => window.removeEventListener("popstate", reset);
+  }, []);
 
   return null;
 }
