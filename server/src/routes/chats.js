@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
-const { getChats, getChat, getUnreadCount, initiateChat, sendMessage, startNegotiation, submitOffer, respondToOffer } = require('../controllers/chatController');
+const { getChats, getChat, getUnreadCount, initiateChat, sendMessage, startNegotiation, submitOffer, respondToOffer, closeChat } = require('../controllers/chatController');
 
 router.use(auth); // all chat routes require authentication
 
@@ -13,5 +13,6 @@ router.post('/:id/message', sendMessage);
 router.post('/:id/negotiate', startNegotiation);
 router.post('/:id/offer', submitOffer);
 router.post('/:id/respond', respondToOffer);
+router.post('/:id/close', closeChat);
 
 module.exports = router;

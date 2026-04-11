@@ -322,6 +322,17 @@ export default function ChatPage() {
     }
   };
 
+  const closeChat = async () => {
+    if (!confirm("Close this chat? This cannot be undone and no further messages can be sent.")) return;
+    try {
+      await api<any>(`/chats/${id}/close`, { method: "POST", token });
+      toast.success("Chat closed.");
+      await fetchChat();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to close chat");
+    }
+  };
+
   const createTransaction = async () => {
     try {
       const data = await api<any>("/transactions", { method: "POST", body: { chatId: id }, token });
@@ -411,6 +422,17 @@ export default function ChatPage() {
                 </span>
               )}
             </div>
+          )}
+          {chat.status === "active" && chat.negotiation?.outcome !== "accepted" && (
+            <button
+              type="button"
+              onClick={closeChat}
+              className="shrink-0 p-2 rounded-md border-2 border-[#E63946] text-[#E63946] bg-[var(--surface)] hover:bg-[#E63946] hover:text-white transition-colors"
+              aria-label="Close chat"
+              title="Close chat"
+            >
+              <X className="w-4 h-4" />
+            </button>
           )}
         </div>
 

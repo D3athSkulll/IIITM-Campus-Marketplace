@@ -1,6 +1,7 @@
 const Listing = require('../models/Listing');
 const { CATEGORIES, CONDITIONS, LISTING_TYPES } = require('../models/Listing');
 const Transaction = require('../models/Transaction');
+const Chat = require('../models/Chat');
 const { getIO } = require('../socket');
 
 const MAX_ACTIVE_LISTINGS = Number(process.env.MAX_ACTIVE_LISTINGS || 25);
@@ -426,6 +427,15 @@ const deleteListing = async (req, res) => {
 
     if (listing.seller.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Only the seller can remove this listing.' });
+    }
+
+    // Block delete if there are active chats on this listing. The seller must close them first.
+    const activeChatCount = await Chat.countDocuments({ listing: listing._id, status: 'active' });
+    if (activeChatCount > 0) {
+      return res.status(409).json({
+        error: `This listing has ${activeChatCount} active chat${activeChatCount > 1 ? 's' : ''}. Close ${activeChatCount > 1 ? 'them' : 'it'} first before deleting.`,
+        activeChatCount,
+      });
     }
 
     listing.status = 'removed';

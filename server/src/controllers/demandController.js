@@ -115,6 +115,27 @@ const closeDemand = async (req, res) => {
 };
 
 /**
+ * DELETE /api/demands/:id
+ * Delete a demand (buyer only)
+ */
+const deleteDemand = async (req, res) => {
+  try {
+    const demand = await BuyerDemand.findById(req.params.id);
+    if (!demand) return res.status(404).json({ error: 'Demand not found.' });
+
+    if (demand.buyer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the buyer can delete this demand.' });
+    }
+
+    await demand.deleteOne();
+    res.json({ message: 'Demand deleted.' });
+  } catch (error) {
+    console.error('deleteDemand error:', error);
+    res.status(500).json({ error: 'Failed to delete demand.' });
+  }
+};
+
+/**
  * GET /api/demands/my
  * Get current user's demands
  */
@@ -128,4 +149,4 @@ const getMyDemands = async (req, res) => {
   }
 };
 
-module.exports = { getDemands, getDemand, createDemand, closeDemand, getMyDemands };
+module.exports = { getDemands, getDemand, createDemand, closeDemand, deleteDemand, getMyDemands };

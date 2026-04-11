@@ -346,4 +346,37 @@ const respondToOffer = async (req, res) => {
   }
 };
 
-module.exports = { getChats, getChat, getUnreadCount, initiateChat, sendMessage, startNegotiation, submitOffer, respondToOffer };
+/**
+ * POST /api/chats/:id/close
+ * Manually mark a chat as failed (closed). Either participant can close.
+ */
+const closeChat = async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.id);
+    if (!chat) return res.status(404).json({ error: 'Chat not found.' });
+
+    const userId = req.user._id.toString();
+    if (chat.buyer.toString() !== userId && chat.seller.toString() !== userId) {
+      return res.status(403).json({ error: 'You are not a participant in this chat.' });
+    }
+
+    if (chat.status !== 'active') {
+      return res.json({ message: 'Chat already closed.', chatStatus: chat.status });
+    }
+
+    chat.status = 'failed';
+    if (chat.negotiation && chat.negotiation.outcome === 'pending') {
+      chat.negotiation.outcome = 'rejected';
+    }
+    await chat.save();
+
+    broadcastChatUpdate(chat._id, { chatStatus: chat.status });
+
+    res.json({ message: 'Chat closed.', chatStatus: chat.status });
+  } catch (error) {
+    console.error('closeChat error:', error);
+    res.status(500).json({ error: 'Failed to close chat.' });
+  }
+};
+
+module.exports = { getChats, getChat, getUnreadCount, initiateChat, sendMessage, startNegotiation, submitOffer, respondToOffer, closeChat };

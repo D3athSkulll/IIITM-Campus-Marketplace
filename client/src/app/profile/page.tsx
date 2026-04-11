@@ -10,16 +10,19 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Package, ShoppingBag, Lock, Plus, Settings, Handshake } from "lucide-react";
+import { Star, Package, ShoppingBag, Lock, Plus, Settings, Handshake, Trash2, MessageSquare } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
   const [myListings, setMyListings] = useState<any[]>([]);
+  const [myDemands, setMyDemands] = useState<any[]>([]);
   const [tradeHistory, setTradeHistory] = useState<any[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
+  const [loadingDemands, setLoadingDemands] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const [tab, setTab] = useState<"listings" | "history">("listings");
+  const [tab, setTab] = useState<"listings" | "demands" | "history">("listings");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -30,11 +33,48 @@ export default function ProfilePage() {
       .catch(() => toast.error("Failed to load your listings"))
       .finally(() => setLoadingListings(false));
 
+    api<any>("/demands/my", { token })
+      .then((d) => setMyDemands(d.demands))
+      .catch(() => {})
+      .finally(() => setLoadingDemands(false));
+
     api<any>("/transactions/history", { token })
       .then((d) => setTradeHistory(d.transactions))
       .catch(() => {})
       .finally(() => setLoadingHistory(false));
   }, [user, token, isLoading]);
+
+  const handleDeleteListing = async (e: React.MouseEvent, listingId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Delete this listing? If there are active chats, you'll need to close them first.")) return;
+    setDeletingId(listingId);
+    try {
+      await api<any>(`/listings/${listingId}`, { method: "DELETE", token });
+      setMyListings((prev) => prev.filter((l) => l._id !== listingId));
+      toast.success("Listing deleted");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete listing");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteDemand = async (e: React.MouseEvent, demandId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Delete this demand request?")) return;
+    setDeletingId(demandId);
+    try {
+      await api<any>(`/demands/${demandId}`, { method: "DELETE", token });
+      setMyDemands((prev) => prev.filter((d) => d._id !== demandId));
+      toast.success("Demand deleted");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete demand");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (isLoading || !user) return null;
 
@@ -108,18 +148,18 @@ export default function ProfilePage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-2 border-[#1D3557] rounded-md overflow-hidden w-fit shadow-[3px_3px_0px_0px_#1D3557]">
-          {(["listings", "history"] as const).map((t, idx) => (
+        <div className="flex border-2 border-[#1D3557] rounded-md overflow-x-auto w-full sm:w-fit shadow-[3px_3px_0px_0px_#1D3557]">
+          {(["listings", "demands", "history"] as const).map((t, idx) => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`px-5 py-2 text-sm font-black transition-colors ${idx > 0 ? "border-l-2 border-[#1D3557]" : ""}
+              className={`px-4 py-2 text-xs sm:text-sm font-black transition-colors whitespace-nowrap ${idx > 0 ? "border-l-2 border-[#1D3557]" : ""}
                 ${tab === t ? "bg-[var(--main)] text-[#1D3557]" : "bg-[var(--surface-alt)] text-[#1D3557] hover:bg-[var(--surface)]"}`}
             >
               <span className="inline-flex items-center gap-1.5">
-                {t === "listings" ? <Package className="w-3.5 h-3.5" /> : <Handshake className="w-3.5 h-3.5" />}
-                {t === "listings" ? "My Listings" : "Trade History"}
+                {t === "listings" ? <Package className="w-3.5 h-3.5" /> : t === "demands" ? <MessageSquare className="w-3.5 h-3.5" /> : <Handshake className="w-3.5 h-3.5" />}
+                {t === "listings" ? "My Listings" : t === "demands" ? "My Demands" : "Trade History"}
               </span>
             </button>
           ))}
@@ -166,9 +206,74 @@ export default function ProfilePage() {
                         >
                           {listing.status}
                         </Badge>
+                        {listing.status !== "sold" && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteListing(e, listing._id)}
+                            disabled={deletingId === listing._id}
+                            className="shrink-0 p-2 rounded-md border-2 border-[#E63946] text-[#E63946] bg-[var(--surface)] hover:bg-[#E63946] hover:text-white transition-colors disabled:opacity-50"
+                            aria-label="Delete listing"
+                            title="Delete listing"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </CardContent>
                     </Card>
                   </Link>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* My Demands */}
+        {tab === "demands" && (
+          <>
+            {loadingDemands ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-20 rounded-md border-2 border-[#1D3557] bg-[var(--surface-alt)] animate-shimmer" />
+                ))}
+              </div>
+            ) : myDemands.length === 0 ? (
+              <div className="text-center py-14 border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557]">
+                <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="font-black">No demands posted</p>
+                <p className="text-sm text-[#1D3557] font-medium mt-1">Post what you're looking for!</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {myDemands.map((demand) => (
+                  <Card key={demand._id}>
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-black text-sm truncate">{demand.title}</div>
+                        <div className="text-xs text-[#1D3557] font-bold capitalize">{demand.category}</div>
+                        {(demand.budgetMin || demand.budgetMax) && (
+                          <div className="text-xs text-[#1D3557] font-bold">
+                            ₹{demand.budgetMin?.toLocaleString() ?? "?"} – ₹{demand.budgetMax?.toLocaleString() ?? "?"}
+                          </div>
+                        )}
+                      </div>
+                      <Badge
+                        variant={demand.status === "open" ? "success" : "secondary"}
+                        className="capitalize shrink-0 text-xs"
+                      >
+                        {demand.status}
+                      </Badge>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteDemand(e, demand._id)}
+                        disabled={deletingId === demand._id}
+                        className="shrink-0 p-2 rounded-md border-2 border-[#E63946] text-[#E63946] bg-[var(--surface)] hover:bg-[#E63946] hover:text-white transition-colors disabled:opacity-50"
+                        aria-label="Delete demand"
+                        title="Delete demand"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
