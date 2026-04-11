@@ -155,7 +155,7 @@ export default function Navbar({ onSearch, searchValue = "" }: NavbarProps) {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-[var(--surface)] border-t-2 border-[#1D3557] px-4 py-4 space-y-2">
+        <div className="md:hidden bg-[var(--surface)] border-t-2 border-[#1D3557] px-4 py-4 space-y-1">
           {/* Mobile search */}
           <form onSubmit={handleSearch}>
             <div className="relative">
@@ -170,30 +170,30 @@ export default function Navbar({ onSearch, searchValue = "" }: NavbarProps) {
             </div>
           </form>
           {user ? (
-            <div className="space-y-1.5 pt-1">
+            <div className="space-y-3">
               <Link href="/listings/new" onClick={() => setMobileOpen(false)}>
-                <Button className="w-full justify-start gap-2 font-black bg-[#A8DADC] text-[#1D3557] border-2 border-[#1D3557] hover:bg-[#D8E2DC]">
+                <Button className={`w-full justify-start gap-2 font-black border-2 border-[#1D3557] ${pathname === "/listings/new" ? "bg-[#F9C74F] text-[#1D3557] hover:bg-[#F9C74F]" : "bg-[#A8DADC] text-[#1D3557] hover:bg-[#D8E2DC]"}`}>
                   <PlusCircle className="w-4 h-4" /> Sell Something
                 </Button>
               </Link>
               <Link href="/chats" onClick={() => setMobileOpen(false)}>
-                <Button variant="outline" className="w-full justify-start gap-2 text-[#1D3557] bg-[var(--surface-alt)] border-[#1D3557] hover:bg-[var(--surface)] shadow-none">
+                <Button variant="outline" className={`w-full justify-start gap-2 text-[#1D3557] border-[#1D3557] shadow-none ${pathname?.startsWith("/chats") ? "bg-[#F9C74F] hover:bg-[#F9C74F]" : "bg-[var(--surface-alt)] hover:bg-[var(--surface)]"}`}>
                   <MessageCircle className="w-4 h-4" /> My Chats
                 </Button>
               </Link>
               <Link href="/profile" onClick={() => setMobileOpen(false)}>
-                <Button variant="outline" className="w-full justify-start gap-2 text-[#1D3557] bg-[var(--surface-alt)] border-[#1D3557] hover:bg-[var(--surface)] shadow-none">
+                <Button variant="outline" className={`w-full justify-start gap-2 text-[#1D3557] border-[#1D3557] shadow-none ${pathname === "/profile" ? "bg-[#F9C74F] hover:bg-[#F9C74F]" : "bg-[var(--surface-alt)] hover:bg-[var(--surface)]"}`}>
                   <User className="w-4 h-4" /> Profile
                 </Button>
               </Link>
               <Link href="/settings" onClick={() => setMobileOpen(false)}>
-                <Button variant="outline" className="w-full justify-start gap-2 text-[#1D3557] bg-[var(--surface-alt)] border-[#1D3557] hover:bg-[var(--surface)] shadow-none">
+                <Button variant="outline" className={`w-full justify-start gap-2 text-[#1D3557] border-[#1D3557] shadow-none ${pathname === "/settings" ? "bg-[#F9C74F] hover:bg-[#F9C74F]" : "bg-[var(--surface-alt)] hover:bg-[var(--surface)]"}`}>
                   <Settings className="w-4 h-4" /> Settings
                 </Button>
               </Link>
               {(user as any).role === "admin" && (
                 <Link href="/admin" onClick={() => setMobileOpen(false)}>
-                  <Button variant="outline" className="w-full justify-start gap-2 text-[#1D3557] bg-[var(--surface-alt)] border-[#1D3557] hover:bg-[var(--surface)] shadow-none">
+                  <Button variant="outline" className={`w-full justify-start gap-2 text-[#1D3557] border-[#1D3557] shadow-none ${pathname?.startsWith("/admin") ? "bg-[#F9C74F] hover:bg-[#F9C74F]" : "bg-[var(--surface-alt)] hover:bg-[var(--surface)]"}`}>
                     <Shield className="w-4 h-4" /> Admin Panel
                   </Button>
                 </Link>
@@ -203,14 +203,14 @@ export default function Navbar({ onSearch, searchValue = "" }: NavbarProps) {
               </Button>
             </div>
           ) : (
-            <div className="space-y-1.5 pt-1">
+            <div className="space-y-4">
               <Link href="/login" onClick={() => setMobileOpen(false)}>
-                <Button variant="outline" className="w-full text-[#1D3557] bg-[var(--surface-alt)] border-[#1D3557] hover:bg-[var(--surface)] shadow-none">
+                <Button variant="outline" className={`w-full text-[#1D3557] border-[#1D3557] shadow-none ${pathname === "/login" ? "bg-[#F9C74F] hover:bg-[#F9C74F]" : "bg-[var(--surface-alt)] hover:bg-[var(--surface)]"}`}>
                   Sign in
                 </Button>
               </Link>
               <Link href="/register" onClick={() => setMobileOpen(false)}>
-                <Button className="w-full font-black">Register</Button>
+                <Button className={`w-full font-black ${pathname === "/register" ? "bg-[#F9C74F] text-[#1D3557] hover:bg-[#F9C74F]" : ""}`}>Register</Button>
               </Link>
             </div>
           )}
