@@ -10,14 +10,34 @@ import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle } from "lucide-react";
 
+const READ_MAP_KEY = "chat-last-read-v1";
+
+function loadReadMap(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(READ_MAP_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
 export default function ChatsListPage() {
   const { user, token, isLoading: authLoading } = useRequireAuth();
   const { socket } = useSocket();
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [unreadChatIds, setUnreadChatIds] = useState<Set<string>>(new Set());
+  const [readMap, setReadMap] = useState<Record<string, string>>({});
   // track joined rooms so we don't re-join on every render
   const joinedRooms = useRef<Set<string>>(new Set());
+
+  // Load read map on mount and re-check when window regains focus
+  useEffect(() => {
+    setReadMap(loadReadMap());
+    const onFocus = () => setReadMap(loadReadMap());
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   const fetchChats = useCallback(async () => {
     if (!token) return;
@@ -63,11 +83,6 @@ export default function ChatsListPage() {
         const rest = prev.filter((_, i) => i !== idx);
         return [updated, ...rest];
       });
-
-      // Mark as unread if the message came from the other person
-      if (payload.senderId && user && payload.senderId !== user._id) {
-        setUnreadChatIds((prev) => new Set(prev).add(payload.chatId));
-      }
     };
 
     socket.on("chat:updated", handleUpdate);
@@ -106,18 +121,16 @@ export default function ChatsListPage() {
             {chats.map((chat) => {
               const other = user._id === chat.buyer._id ? chat.seller : chat.buyer;
               const lastMsg = chat.messages[chat.messages.length - 1];
-              const hasUnread = unreadChatIds.has(chat._id);
+              // A chat is unread if:
+              //  - it has a last message from the OTHER user
+              //  - AND the last read id in localStorage doesn't match the last message id
+              const lastMsgSenderId = lastMsg?.sender?._id || lastMsg?.sender;
+              const isFromOther = lastMsg && lastMsgSenderId && lastMsgSenderId !== user._id;
+              const hasUnread = isFromOther && readMap[chat._id] !== lastMsg._id;
               return (
                 <Link
                   key={chat._id}
                   href={`/chats/${chat._id}`}
-                  onClick={() =>
-                    setUnreadChatIds((prev) => {
-                      const next = new Set(prev);
-                      next.delete(chat._id);
-                      return next;
-                    })
-                  }
                 >
                   <div className={`flex items-center gap-3 p-4 rounded-xl border-2 bg-[var(--surface)] hover:shadow-sm transition-shadow cursor-pointer ${hasUnread ? "border-[#E63946] shadow-[2px_2px_0px_0px_#E63946]" : "border-[#1D3557]"}`}>
                     <div className="relative shrink-0">

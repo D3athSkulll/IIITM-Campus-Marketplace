@@ -57,7 +57,8 @@ const getChat = async (req, res) => {
     }
 
     const role = isBuyer ? 'buyer' : 'seller';
-    res.json({ chat, role, quickReplies: QUICK_REPLIES[role] });
+    const quickReplies = chat.chatType === 'general' ? [] : QUICK_REPLIES[role];
+    res.json({ chat, role, quickReplies });
   } catch (error) {
     console.error('getChat error:', error);
     res.status(500).json({ error: 'Failed to fetch chat.' });
@@ -113,7 +114,8 @@ const initiateChat = async (req, res) => {
     }
 
     chat = new Chat({
-      listing: listingId || undefined,
+      listing: listingId || null,
+      chatType: listingId ? 'listing' : 'general',
       buyer: currentUserId,
       seller: otherUserId,
     });
@@ -121,6 +123,8 @@ const initiateChat = async (req, res) => {
     if (listingId) {
       const listing = await Listing.findById(listingId);
       chat.addMessage(currentUserId, 'system', `Chat started for "${listing.title}"`);
+    } else {
+      chat.addMessage(currentUserId, 'system', 'Direct chat started');
     }
 
     await chat.save();

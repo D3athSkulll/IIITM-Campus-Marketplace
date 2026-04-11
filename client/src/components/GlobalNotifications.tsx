@@ -26,10 +26,11 @@ export default function GlobalNotifications() {
     }) => {
       addNotification({
         type: "info",
-        title: `💬 ${data.senderName}`,
+        title: `${data.senderName} sent a message`,
         message: data.message,
         browser: true,
         duration: 5000,
+        href: `/chats/${data.chatId}`,
       });
     };
 
@@ -41,10 +42,11 @@ export default function GlobalNotifications() {
     }) => {
       addNotification({
         type: "warning",
-        title: `🔔 ${data.authorName} mentioned you`,
+        title: `${data.authorName} mentioned you`,
         message: `"${data.content}" — in ${data.listingTitle}`,
         browser: true,
         duration: 7000,
+        href: `/listings/${data.listingId}`,
       });
     };
 

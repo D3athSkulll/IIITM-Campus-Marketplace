@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
+import NotificationBell from "@/components/NotificationBell";
 import {
   ShoppingBag,
   PlusCircle,
@@ -85,6 +86,7 @@ export default function Navbar({ onSearch, searchValue = "" }: NavbarProps) {
                 <PlusCircle className="w-4 h-4" /> Sell
               </Button>
             </Link>
+            <NotificationBell />
             <Link href="/chats">
               <Button variant="ghost" size="sm" className="text-[#1D3557] hover:bg-[var(--surface-alt)] border-transparent gap-1.5">
                 <MessageCircle className="w-4 h-4" /> Chats
@@ -135,8 +137,14 @@ export default function Navbar({ onSearch, searchValue = "" }: NavbarProps) {
           </nav>
         )}
 
-        {/* Mobile menu toggle */}
+        {/* Mobile: notification bell + menu toggle */}
+        {user && (
+          <div className="md:hidden">
+            <NotificationBell />
+          </div>
+        )}
         <button
+          type="button"
           className="md:hidden text-[#1D3557] p-1.5 rounded-md border border-[#1D3557] hover:bg-[var(--surface-alt)]"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"

@@ -130,19 +130,25 @@ const chatSchema = new mongoose.Schema(
     listing: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Listing',
-      required: [true, 'Listing reference is required'],
+      default: null,
+    },
+
+    chatType: {
+      type: String,
+      enum: ['listing', 'general'],
+      default: 'listing',
     },
 
     buyer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Buyer is required'],
+      required: [true, 'Participant is required'],
     },
 
     seller: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Seller is required'],
+      required: [true, 'Participant is required'],
     },
 
     mode: {
@@ -319,7 +325,10 @@ chatSchema.index({ listing: 1 });
 chatSchema.index({ buyer: 1 });
 chatSchema.index({ seller: 1 });
 chatSchema.index({ lastMessageAt: -1 });
-chatSchema.index({ buyer: 1, seller: 1, listing: 1 }, { unique: true }); // One chat per buyer-seller-listing
+chatSchema.index(
+  { buyer: 1, seller: 1, listing: 1 },
+  { unique: true, partialFilterExpression: { listing: { $type: 'objectId' } } }
+);
 
 // ─── Export ─────────────────────────────────────────────────────────────────────
 const Chat = mongoose.model('Chat', chatSchema);

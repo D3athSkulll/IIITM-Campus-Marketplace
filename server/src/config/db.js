@@ -13,6 +13,22 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 10000,
     });
     console.log(`MongoDB connected: ${conn.connection.host}`);
+
+    // Drop stale chat unique index so general chats (listing: null) can be created
+    try {
+      const chatCollection = mongoose.connection.db.collection('chats');
+      const indexes = await chatCollection.indexes();
+      const staleIdx = indexes.find(
+        (idx) =>
+          idx.key && idx.key.buyer === 1 && idx.key.seller === 1 && idx.key.listing === 1 && !idx.partialFilterExpression
+      );
+      if (staleIdx) {
+        await chatCollection.dropIndex(staleIdx.name);
+        console.log(`Dropped stale chat index: ${staleIdx.name}`);
+      }
+    } catch (e) {
+      // Ignore — mongoose will rebuild indexes automatically
+    }
   } catch (error) {
     console.error(`MongoDB connection error: ${error.message}`);
 

@@ -57,10 +57,16 @@ function renderMentions(
     if (!part.startsWith("@")) return <span key={i}>{part}</span>;
     const nickname = part.slice(1).toLowerCase();
     const userData = mentionsMap[nickname];
+    const tooltip = userData
+      ? (userData.showRealIdentity && userData.realName
+          ? userData.realName
+          : "Identity hidden")
+      : "Identity hidden";
     return (
       <button
         key={i}
         type="button"
+        title={tooltip}
         onClick={() => onMentionClick(part.slice(1), userData)}
         className="font-black text-[#2A9D8F] hover:underline cursor-pointer bg-transparent border-none p-0 inline"
       >
@@ -731,7 +737,7 @@ export default function ListingDetailPage() {
 
               {/* @mention dropdown */}
               {mentionResults.length > 0 && (
-                <div className="absolute left-2 top-full mt-1 z-30 w-72 border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557] max-h-64 overflow-y-auto">
+                <div className="absolute left-2 top-full mt-1 z-30 w-[26rem] max-w-[calc(100vw-2rem)] border-2 border-[#1D3557] rounded-md bg-[var(--surface)] shadow-[4px_4px_0px_0px_#1D3557] max-h-64 overflow-y-auto">
                   {mentionResults.map((u: any) => {
                     const isSeller = listing?.seller?._id === u._id;
                     const isPreviousCommenter = comments.some((c: any) => c.author._id === u._id);
@@ -740,7 +746,7 @@ export default function ListingDetailPage() {
                         key={u._id}
                         type="button"
                         onMouseDown={(e) => { e.preventDefault(); handleSelectMention(u.anonymousNickname); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-[#1D3557] hover:bg-[#A8DADC] transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-[#1D3557] hover:bg-[#A8DADC] transition-colors text-left whitespace-nowrap"
                       >
                         <img
                           src={u.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(u.anonymousNickname)}`}
@@ -820,7 +826,14 @@ export default function ListingDetailPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-black text-[#1D3557]">
+                          <span
+                            className="text-xs font-black text-[#1D3557] cursor-help"
+                            title={
+                              comment.author.showRealIdentity && comment.author.realName
+                                ? comment.author.realName
+                                : "Identity hidden"
+                            }
+                          >
                             {comment.author.displayName || comment.author.anonymousNickname}
                           </span>
                           <span className="text-[10px] font-medium text-[#1D3557]/50">{timeAgo(comment.createdAt)}</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useCallback, useState } from "react";
+import React, { createContext, useContext, useCallback, useEffect, useState } from "react";
 
 export interface Notification {
   id: string;
@@ -9,29 +9,64 @@ export interface Notification {
   message: string;
   duration?: number; // ms, 0 = no auto-dismiss
   browser?: boolean; // Show browser notification
+  href?: string; // Optional link to navigate on click
+  createdAt?: string;
 }
 
 interface NotificationContextType {
-  notifications: Notification[];
+  notifications: Notification[]; // transient banner notifications (auto-dismiss)
+  history: Notification[]; // persistent notification history
   addNotification: (notification: Omit<Notification, "id">) => string;
   removeNotification: (id: string) => void;
+  clearHistory: () => void;
+  removeHistoryItem: (id: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+const HISTORY_KEY = "campus-market-notifications-v1";
+const MAX_HISTORY = 50;
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [history, setHistory] = useState<Notification[]>([]);
+
+  // Load history from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) setHistory(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Persist history whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch {
+      // ignore
+    }
+  }, [history]);
+
+  const removeNotification = useCallback((id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }, []);
 
   const addNotification = useCallback((notification: Omit<Notification, "id">) => {
     const id = `notif-${Date.now()}-${Math.random()}`;
-    const fullNotification: Notification = { ...notification, id };
+    const fullNotification: Notification = {
+      ...notification,
+      id,
+      createdAt: new Date().toISOString(),
+    };
 
-    // Request browser notification permission if needed
     if (notification.browser && "Notification" in window) {
       if (Notification.permission === "granted") {
         new Notification(notification.title, {
           body: notification.message,
-          icon: "/logo.png",
+          icon: "/app_logo.png",
           tag: "marketplace-notification",
         });
       } else if (Notification.permission !== "denied") {
@@ -39,7 +74,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           if (permission === "granted") {
             new Notification(notification.title, {
               body: notification.message,
-              icon: "/logo.png",
+              icon: "/app_logo.png",
               tag: "marketplace-notification",
             });
           }
@@ -48,24 +83,38 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     setNotifications((prev) => [...prev, fullNotification]);
+    // Add to persistent history (newest first), trim to max size
+    setHistory((prev) => [fullNotification, ...prev].slice(0, MAX_HISTORY));
 
-    // Auto-dismiss after duration (default 5s for banner notifications)
     if (notification.duration !== 0) {
       const timeout = notification.duration || 5000;
       setTimeout(() => {
-        removeNotification(id);
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
       }, timeout);
     }
 
     return id;
   }, []);
 
-  const removeNotification = useCallback((id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+  }, []);
+
+  const removeHistoryItem = useCallback((id: string) => {
+    setHistory((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ notifications, addNotification, removeNotification }}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        history,
+        addNotification,
+        removeNotification,
+        clearHistory,
+        removeHistoryItem,
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );

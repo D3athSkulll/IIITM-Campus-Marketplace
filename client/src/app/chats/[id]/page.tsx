@@ -82,12 +82,24 @@ export default function ChatPage() {
 
     const handleUpdate = (payload: { type: string; message?: any }) => {
       if (payload.type === "message" && payload.message) {
-        // Optimistically append the new message without a full refetch
         setChat((prev: any) => {
           if (!prev) return prev;
-          // Avoid duplicates (our own sent message is already there after sendMessage)
-          const exists = prev.messages.some((m: any) => m._id === payload.message._id);
-          if (exists) return prev;
+          // Already present by _id
+          if (prev.messages.some((m: any) => m._id === payload.message._id)) return prev;
+          // Match a pending temp message from the same sender with identical content.
+          // Race: the socket event may arrive before the POST response, which would
+          // leave two copies — one temp, one real — until a refresh.
+          const incomingSenderId = payload.message.sender?._id || payload.message.sender;
+          const tempIdx = prev.messages.findIndex((m: any) => {
+            if (typeof m._id !== "string" || !m._id.startsWith("temp-")) return false;
+            const mSenderId = m.sender?._id || m.sender;
+            return mSenderId === incomingSenderId && m.content === payload.message.content && m.type === payload.message.type;
+          });
+          if (tempIdx !== -1) {
+            const newMessages = [...prev.messages];
+            newMessages[tempIdx] = payload.message;
+            return { ...prev, messages: newMessages, lastMessageAt: payload.message.createdAt };
+          }
           return {
             ...prev,
             messages: [...prev.messages, payload.message],
@@ -120,10 +132,21 @@ export default function ChatPage() {
     };
   }, [socket, id, fetchChat]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change + mark this chat as read up to the last message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chat?.messages]);
+    if (!chat?.messages?.length || !id) return;
+    const lastMsgId = chat.messages[chat.messages.length - 1]?._id;
+    if (!lastMsgId) return;
+    try {
+      const raw = localStorage.getItem("chat-last-read-v1");
+      const map = raw ? JSON.parse(raw) : {};
+      map[id] = lastMsgId;
+      localStorage.setItem("chat-last-read-v1", JSON.stringify(map));
+    } catch {
+      // ignore
+    }
+  }, [chat?.messages, id]);
 
   const handleTextChange = (value: string) => {
     setText(value);
@@ -173,15 +196,17 @@ export default function ChatPage() {
     try {
       const result = await api<any>(`/chats/${id}/message`, { method: "POST", body: { content, type }, token });
       setText("");
-      // Replace temp message with confirmed server message so socket dedup works
       if (result?.message) {
         setChat((prev: any) => {
           if (!prev) return prev;
+          // If socket already placed the real message (replacing or appending), just drop the temp
+          const alreadyReal = prev.messages.some((m: { _id: string }) => m._id === result.message._id);
+          if (alreadyReal) {
+            return { ...prev, messages: prev.messages.filter((m: { _id: string }) => m._id !== tempMessage._id) };
+          }
           return {
             ...prev,
-            messages: prev.messages.map((m: any) =>
-              m._id === tempMessage._id ? result.message : m
-            ),
+            messages: prev.messages.map((m: { _id: string }) => (m._id === tempMessage._id ? result.message : m)),
           };
         });
       }
@@ -322,6 +347,7 @@ export default function ChatPage() {
   const hasPendingOffer = lastOffer?.status === "pending";
   const cardsRemaining = neg ? neg.maxRounds - neg.offers.length : 3;
   const listingPrice = chat.listing?.price;
+  const isGeneralChat = chat.chatType === "general" || !chat.listing;
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col">
@@ -355,21 +381,33 @@ export default function ChatPage() {
             }
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-black text-sm truncate">{other.displayName}</div>
-            <div className="text-xs text-[#1D3557] font-medium truncate">{chat.listing?.title}</div>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="text-sm font-black text-[#1D3557]">₹{listingPrice?.toLocaleString("en-IN")}</div>
-            {chat.mode === "negotiation" && (
-              <span className="text-[10px] font-black bg-[#F9C74F] border border-[#1D3557] px-1.5 py-0.5 rounded-sm">
-                NEGOTIATING
-              </span>
+            <div
+              className="font-black text-sm truncate cursor-help"
+              title={other.showRealIdentity && other.realName ? other.realName : "Identity hidden"}
+            >
+              {other.displayName}
+            </div>
+            {!isGeneralChat && (
+              <div className="text-xs text-[#1D3557] font-medium truncate">{chat.listing?.title}</div>
+            )}
+            {isGeneralChat && (
+              <div className="text-xs text-[#1D3557]/60 font-medium truncate">Direct message</div>
             )}
           </div>
+          {!isGeneralChat && (
+            <div className="text-right shrink-0">
+              <div className="text-sm font-black text-[#1D3557]">₹{listingPrice?.toLocaleString("en-IN")}</div>
+              {chat.mode === "negotiation" && (
+                <span className="text-[10px] font-black bg-[#F9C74F] border border-[#1D3557] px-1.5 py-0.5 rounded-sm">
+                  NEGOTIATING
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Info banner */}
-        {showInfoBanner && (
+        {showInfoBanner && !isGeneralChat && (
           <div className="flex items-start gap-2 bg-[#F9C74F] border-2 border-[#1D3557] rounded-md p-3 shadow-[3px_3px_0px_0px_#1D3557]">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <div className="flex-1 text-xs font-bold">
@@ -386,7 +424,7 @@ export default function ChatPage() {
         )}
 
         {/* Negotiation status */}
-        {chat.mode === "negotiation" && neg && (
+        {!isGeneralChat && chat.mode === "negotiation" && neg && (
           <div className={`border-2 border-[#1D3557] rounded-md p-3 shadow-[3px_3px_0px_0px_#1D3557] ${
             neg.outcome === "accepted" ? "bg-[#D8E2DC]" :
             neg.outcome === "rejected" ? "bg-[#D8E2DC]" : "bg-[#F9C74F]"
@@ -488,7 +526,7 @@ export default function ChatPage() {
         </div>
 
         {/* Seller: pending offer response */}
-        {role === "seller" && isNegActive && hasPendingOffer && (
+        {!isGeneralChat && role === "seller" && isNegActive && hasPendingOffer && (
           <div className="bg-[#F9C74F] border-2 border-[#1D3557] rounded-md p-3 shadow-[3px_3px_0px_0px_#1D3557] space-y-2">
             <div className="text-sm font-black">
               Buyer offers ₹{lastOffer.amount.toLocaleString("en-IN")} (Card {lastOffer.round}/3)
@@ -508,7 +546,7 @@ export default function ChatPage() {
         )}
 
         {/* Buyer: negotiation actions */}
-        {role === "buyer" && chat.status === "active" && (
+        {!isGeneralChat && role === "buyer" && chat.status === "active" && (
           <>
             {chat.mode === "normal" && !showNegotiatePrompt && (
               <button type="button" onClick={() => setShowNegotiatePrompt(true)} className="text-xs font-black text-[#1D3557] hover:underline flex items-center gap-1 w-fit">

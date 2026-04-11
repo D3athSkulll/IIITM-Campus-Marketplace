@@ -9,7 +9,6 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -101,17 +100,21 @@ export default function NewDemandPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Category <span className="text-destructive">*</span></Label>
-                <Select onValueChange={(v: string | null) => setCategory(v ?? "")} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
+                <select
+                  id="category"
+                  aria-label="Category"
+                  title="Category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 rounded-md border-2 border-[#1D3557] bg-[var(--surface)] text-sm font-medium text-[#1D3557] focus:outline-none shadow-[2px_2px_0px_0px_#1D3557] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all capitalize"
+                >
+                  <option value="" disabled>Select category…</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c} className="capitalize">{c}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-2">
@@ -141,7 +144,7 @@ export default function NewDemandPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--navy)] hover:bg-[var(--navy-light)] text-[#1D3557] font-semibold"
+                className="w-full bg-[#1D3557] hover:bg-[#2A4A73] text-[#F1FAEE] border-2 border-[#1D3557] font-black shadow-[3px_3px_0px_0px_#1D3557] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
               >
                 {loading ? "Posting…" : "Post Demand"}
               </Button>
