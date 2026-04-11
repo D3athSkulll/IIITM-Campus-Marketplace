@@ -271,21 +271,23 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-[var(--surface-soft)] border-2 border-[#1D3557] p-1.5 rounded-lg overflow-x-auto">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-                tab === t.key
-                  ? "bg-[var(--hero-panel)] border-2 border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557] text-[#1D3557]"
-                  : "text-[var(--text-soft)] hover:text-[#1D3557] hover:bg-[#F1FAEE]/45"
-              }`}
-            >
-              {t.icon}
-              {t.label}
-            </button>
-          ))}
+        <div className="bg-[var(--surface-soft)] border-2 border-[#1D3557] rounded-lg overflow-x-auto">
+          <div className="flex min-w-max p-1.5 gap-1">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex flex-col sm:flex-row items-center gap-1 sm:gap-1.5 px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                  tab === t.key
+                    ? "bg-[var(--hero-panel)] border-2 border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557] text-[#1D3557]"
+                    : "text-[var(--text-soft)] hover:text-[#1D3557] hover:bg-[#F9C74F]"
+                }`}
+              >
+                {t.icon}
+                <span>{t.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Overview */}

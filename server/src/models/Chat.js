@@ -257,11 +257,11 @@ chatSchema.methods.submitOffer = function (amount, listingPrice) {
     throw new Error(`Offer must be less than the asking price of ₹${listingPrice}. Bargaining means negotiating down, not up.`);
   }
 
-  // Also must be lower than the previous offer in the same session
+  // After a rejected offer the buyer must raise their bid (move closer to asking price).
   if (this.negotiation.offers.length > 0) {
     const lastOffer = this.negotiation.offers[this.negotiation.offers.length - 1];
-    if (amount >= lastOffer.amount) {
-      throw new Error(`Each new offer must be lower than your previous offer of ₹${lastOffer.amount}.`);
+    if (lastOffer.status === 'rejected' && amount <= lastOffer.amount) {
+      throw new Error(`Your previous offer of ₹${lastOffer.amount} was rejected. You must offer more than ₹${lastOffer.amount} (still below asking price).`);
     }
   }
 

@@ -141,9 +141,9 @@ export default function ProfilePage() {
                 <p className="text-sm text-[#1D3557] font-medium mt-1">Be the first to sell something!</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="flex flex-col gap-3">
                 {myListings.map((listing) => (
-                  <Link key={listing._id} href={`/listings/${listing._id}`}>
+                  <Link key={listing._id} href={`/listings/${listing._id}`} className="block">
                     <Card className="hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none cursor-pointer transition-all">
                       <CardContent className="p-3 flex items-center gap-3">
                         <div className="w-14 h-14 rounded-md border-2 border-[#1D3557] overflow-hidden bg-[var(--surface-alt)] shrink-0">
@@ -191,12 +191,12 @@ export default function ProfilePage() {
                 <p className="text-sm text-[#1D3557] font-medium mt-1">Start buying or selling!</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="flex flex-col gap-3">
                 {tradeHistory.map((tx) => {
                   const isBuyer = tx.buyer._id === user._id;
                   const other = isBuyer ? tx.seller : tx.buyer;
                   return (
-                    <Link key={tx._id} href={`/transactions/${tx._id}`}>
+                    <Link key={tx._id} href={`/transactions/${tx._id}`} className="block">
                       <Card className="hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none cursor-pointer transition-all">
                         <CardContent className="p-3 flex items-center gap-3">
                           <div className="w-14 h-14 rounded-md border-2 border-[#1D3557] overflow-hidden bg-[var(--surface-alt)] shrink-0">

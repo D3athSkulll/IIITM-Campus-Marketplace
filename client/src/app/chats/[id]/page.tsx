@@ -294,7 +294,13 @@ export default function ChatPage() {
     if (!amount || amount <= 0) { toast.error("Enter a valid offer amount"); return; }
     const listingPrice = chat?.listing?.price;
     if (listingPrice && amount >= listingPrice) {
-      toast.error(`Offer must be below asking price ₹${listingPrice.toLocaleString("en-IN")}. Bargaining means negotiating down.`);
+      toast.error(`Offer must be below asking price ₹${listingPrice.toLocaleString("en-IN")}.`);
+      return;
+    }
+    // After a rejection the next offer must be higher than the last rejected one
+    const lastOffer = neg?.offers?.[neg.offers.length - 1];
+    if (lastOffer?.status === "rejected" && amount <= lastOffer.amount) {
+      toast.error(`Seller rejected ₹${lastOffer.amount.toLocaleString("en-IN")}. Offer more than that.`);
       return;
     }
     try {
@@ -576,11 +582,15 @@ export default function ChatPage() {
               <div className="flex gap-2">
                 <Input
                   type="number"
-                  placeholder={`Offer below ₹${listingPrice?.toLocaleString("en-IN") ?? "asking price"}`}
+                  placeholder={
+                    lastOffer?.status === "rejected"
+                      ? `More than ₹${lastOffer.amount.toLocaleString("en-IN")}, below ₹${listingPrice?.toLocaleString("en-IN") ?? "asking"}`
+                      : `Offer below ₹${listingPrice?.toLocaleString("en-IN") ?? "asking price"}`
+                  }
                   value={offerAmount}
                   onChange={(e) => setOfferAmount(e.target.value)}
                   className="flex-1"
-                  min={1}
+                  min={lastOffer?.status === "rejected" ? lastOffer.amount + 1 : 1}
                   max={listingPrice ? listingPrice - 1 : undefined}
                   aria-label="Offer amount"
                 />
