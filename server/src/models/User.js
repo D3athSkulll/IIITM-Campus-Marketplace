@@ -118,6 +118,16 @@ const userSchema = new mongoose.Schema(
       default: 'student',
     },
 
+    // ── Security Question ────────────────────────────────────────────────────────
+    securityQuestion: {
+      type: String,
+      default: "What is the name of your pet?",
+    },
+    securityAnswer: {
+      type: String,
+      default: "tom",
+    },
+
     // ── Trust & Rating Aggregates ─────────────────────────────────────────────
     totalTrades: {
       type: Number,

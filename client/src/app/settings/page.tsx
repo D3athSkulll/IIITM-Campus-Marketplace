@@ -52,6 +52,18 @@ export default function SettingsPage() {
   const [editingNickname, setEditingNickname] = useState(false);
   const [savingNickname, setSavingNickname] = useState(false);
 
+  const SECURITY_QUESTIONS = [
+    "What is the name of your pet?",
+    "What is your best friend's first name?",
+    "What is your favourite fruit?",
+    "What is the name of the street you grew up on?",
+    "What was the name of your first school?",
+    "What is your mother's maiden name?",
+  ];
+  const [secQuestion, setSecQuestion] = useState((user as any)?.securityQuestion || SECURITY_QUESTIONS[0]);
+  const [secAnswer, setSecAnswer] = useState("");
+  const [savingSecQ, setSavingSecQ] = useState(false);
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/login");
@@ -59,6 +71,21 @@ export default function SettingsPage() {
   }, [isLoading, user, router]);
 
   if (isLoading || !user) return null;
+
+  const handleSaveSecurityQ = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!secAnswer.trim()) { toast.error("Answer is required"); return; }
+    setSavingSecQ(true);
+    try {
+      await api("/auth/profile", { method: "PUT", body: { securityQuestion: secQuestion, securityAnswer: secAnswer }, token });
+      toast.success("Security question updated!");
+      setSecAnswer("");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update");
+    } finally {
+      setSavingSecQ(false);
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,62 +425,106 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "security" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lock className="w-4 h-4" /> Change Password
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleChangePassword} className="space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-black uppercase tracking-wide">Current Password</label>
-                      <div className="relative">
+              <div className="space-y-4">
+                {/* Security Question */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <ShieldAlert className="w-4 h-4" /> Security Question
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground">Used for account recovery. Current: <em>{(user as any)?.securityQuestion || "Not set"}</em></p>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleSaveSecurityQ} className="space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-black uppercase tracking-wide">Question</label>
+                        <select
+                          title="Security question"
+                          aria-label="Security question"
+                          value={secQuestion}
+                          onChange={(e) => setSecQuestion(e.target.value)}
+                          className="w-full px-3 py-2 rounded-md border-2 border-[#1D3557] bg-[var(--surface)] text-sm font-medium text-[#1D3557] focus:outline-none shadow-[2px_2px_0px_0px_#1D3557] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all"
+                        >
+                          {SECURITY_QUESTIONS.map((q) => (
+                            <option key={q} value={q}>{q}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-black uppercase tracking-wide">New Answer</label>
+                        <Input
+                          placeholder="Your answer"
+                          value={secAnswer}
+                          onChange={(e) => setSecAnswer(e.target.value)}
+                          required
+                          autoComplete="off"
+                        />
+                      </div>
+                      <Button type="submit" disabled={savingSecQ} className="w-full font-black">
+                        {savingSecQ ? "Saving…" : "Update Security Question"}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                {/* Change Password */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Lock className="w-4 h-4" /> Change Password
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleChangePassword} className="space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-black uppercase tracking-wide">Current Password</label>
+                        <div className="relative">
+                          <Input
+                            type={showPwd ? "text" : "password"}
+                            placeholder="Enter current password"
+                            value={currentPwd}
+                            onChange={(e) => setCurrentPwd(e.target.value)}
+                            required
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            aria-label={showPwd ? "Hide password" : "Show password"}
+                            onClick={() => setShowPwd(!showPwd)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1D3557]"
+                          >
+                            {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-black uppercase tracking-wide">New Password</label>
                         <Input
                           type={showPwd ? "text" : "password"}
-                          placeholder="Enter current password"
-                          value={currentPwd}
-                          onChange={(e) => setCurrentPwd(e.target.value)}
+                          placeholder="Min. 6 characters"
+                          value={newPwd}
+                          onChange={(e) => setNewPwd(e.target.value)}
                           required
-                          className="pr-10"
+                          minLength={6}
                         />
-                        <button
-                          type="button"
-                          aria-label={showPwd ? "Hide password" : "Show password"}
-                          onClick={() => setShowPwd(!showPwd)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1D3557]"
-                        >
-                          {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
                       </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-black uppercase tracking-wide">New Password</label>
-                      <Input
-                        type={showPwd ? "text" : "password"}
-                        placeholder="Min. 6 characters"
-                        value={newPwd}
-                        onChange={(e) => setNewPwd(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-black uppercase tracking-wide">Confirm New Password</label>
-                      <Input
-                        type={showPwd ? "text" : "password"}
-                        placeholder="Repeat new password"
-                        value={confirmPwd}
-                        onChange={(e) => setConfirmPwd(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" disabled={savingPwd} className="w-full font-black">
-                      {savingPwd ? "Changing…" : "Change Password"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
+                      <div className="space-y-1">
+                        <label className="text-xs font-black uppercase tracking-wide">Confirm New Password</label>
+                        <Input
+                          type={showPwd ? "text" : "password"}
+                          placeholder="Repeat new password"
+                          value={confirmPwd}
+                          onChange={(e) => setConfirmPwd(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <Button type="submit" disabled={savingPwd} className="w-full font-black">
+                        {savingPwd ? "Changing…" : "Change Password"}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {activeTab === "danger" && (

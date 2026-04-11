@@ -8,7 +8,7 @@ const { generateNickname } = require('../models/User');
  */
 const register = async (req, res) => {
   try {
-    const { email, password, realName, phone } = req.body;
+    const { email, password, realName, phone, securityQuestion, securityAnswer } = req.body;
 
     // Validate required fields
     if (!email || !password || !realName || !phone) {
@@ -46,6 +46,8 @@ const register = async (req, res) => {
       realName: realName.trim(),
       phone: phone.trim(),
       anonymousNickname: generateNickname(),
+      ...(securityQuestion && { securityQuestion: securityQuestion.trim() }),
+      ...(securityAnswer && { securityAnswer: securityAnswer.trim().toLowerCase() }),
     });
 
     await user.save();
@@ -127,6 +129,7 @@ const login = async (req, res) => {
         averageRating: user.isRatingVisible ? user.averageRating : null,
         tradesUntilRatingVisible: user.tradesUntilRatingVisible,
         onboardingComplete: !!user.hostelBlock,
+        securityQuestion: user.securityQuestion,
       },
     });
   } catch (error) {
@@ -201,6 +204,7 @@ const getMe = async (req, res) => {
         averageRating: user.isRatingVisible ? user.averageRating : null,
         tradesUntilRatingVisible: user.tradesUntilRatingVisible,
         onboardingComplete: !!user.hostelBlock,
+        securityQuestion: user.securityQuestion,
         role: user.role,
         createdAt: user.createdAt,
       },
@@ -254,7 +258,7 @@ const changePassword = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
   try {
-    const { showRealIdentity, hostelBlock, avatarUrl, phone, realName, anonymousNickname } = req.body;
+    const { showRealIdentity, hostelBlock, avatarUrl, phone, realName, anonymousNickname, securityQuestion, securityAnswer } = req.body;
     const user = req.user;
 
     if (showRealIdentity !== undefined) user.showRealIdentity = !!showRealIdentity;
@@ -262,6 +266,8 @@ const updateProfile = async (req, res) => {
     if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
     if (phone !== undefined) user.phone = phone.trim();
     if (realName !== undefined) user.realName = realName.trim();
+    if (securityQuestion !== undefined) user.securityQuestion = securityQuestion.trim();
+    if (securityAnswer !== undefined) user.securityAnswer = securityAnswer.trim().toLowerCase();
 
     if (anonymousNickname !== undefined) {
       const trimmed = anonymousNickname.trim();
@@ -300,6 +306,7 @@ const updateProfile = async (req, res) => {
         averageRating: user.isRatingVisible ? user.averageRating : null,
         tradesUntilRatingVisible: user.tradesUntilRatingVisible,
         onboardingComplete: !!user.hostelBlock,
+        securityQuestion: user.securityQuestion,
         role: user.role,
       },
     });

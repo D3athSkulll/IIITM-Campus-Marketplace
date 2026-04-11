@@ -36,6 +36,34 @@ const getChats = async (req, res) => {
 };
 
 /**
+ * GET /api/chats/unread-count
+ * Returns count of chats that have at least one message from the other party
+ * that was sent after the user's last message (lightweight, no localStorage dependency).
+ */
+const getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.user._id.toString();
+    const chats = await Chat.find({
+      $or: [{ buyer: userId }, { seller: userId }],
+      status: { $ne: 'failed' },
+    }).select('messages buyer seller');
+
+    let unreadCount = 0;
+    for (const chat of chats) {
+      if (!chat.messages.length) continue;
+      const lastMsg = chat.messages[chat.messages.length - 1];
+      const senderId = lastMsg.sender?.toString();
+      if (senderId && senderId !== userId) {
+        unreadCount += 1;
+      }
+    }
+    res.json({ unreadCount });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch unread count.' });
+  }
+};
+
+/**
  * GET /api/chats/:id
  * Get a single chat with full message history
  */
@@ -318,4 +346,4 @@ const respondToOffer = async (req, res) => {
   }
 };
 
-module.exports = { getChats, getChat, initiateChat, sendMessage, startNegotiation, submitOffer, respondToOffer };
+module.exports = { getChats, getChat, getUnreadCount, initiateChat, sendMessage, startNegotiation, submitOffer, respondToOffer };

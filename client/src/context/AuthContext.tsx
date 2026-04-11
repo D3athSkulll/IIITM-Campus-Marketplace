@@ -25,7 +25,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, realName: string, phone: string) => Promise<void>;
+  register: (email: string, password: string, realName: string, phone: string, securityQuestion?: string, securityAnswer?: string) => Promise<void>;
   completeOnboarding: (showRealIdentity: boolean, hostelBlock: string) => Promise<void>;
   logout: () => void;
 }
@@ -72,10 +72,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
   }, []);
 
-  const register = useCallback(async (email: string, password: string, realName: string, phone: string) => {
+  const register = useCallback(async (email: string, password: string, realName: string, phone: string, securityQuestion?: string, securityAnswer?: string) => {
     const data = await api<{ token: string; user: User }>("/auth/register", {
       method: "POST",
-      body: { email, password, realName, phone },
+      body: { email, password, realName, phone, securityQuestion, securityAnswer },
     });
     localStorage.setItem("cm_token", data.token);
     setToken(data.token);

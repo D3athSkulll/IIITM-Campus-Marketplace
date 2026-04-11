@@ -562,8 +562,12 @@ export default function ChatPage() {
         {!isGeneralChat && role === "buyer" && chat.status === "active" && (
           <>
             {chat.mode === "normal" && !showNegotiatePrompt && (
-              <button type="button" onClick={() => setShowNegotiatePrompt(true)} className="text-xs font-black text-[#1D3557] hover:underline flex items-center gap-1 w-fit">
-                <Zap className="w-3 h-3" /> Use bargaining cards to negotiate price
+              <button
+                type="button"
+                onClick={() => setShowNegotiatePrompt(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md border-2 border-[#1D3557] bg-[#2A9D8F] text-[#F1FAEE] font-black text-sm shadow-[3px_3px_0px_0px_#1D3557] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+              >
+                <Zap className="w-4 h-4" /> Use Bargaining Cards to Negotiate Price
               </button>
             )}
             {showNegotiatePrompt && (

@@ -11,6 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
 
+const SECURITY_QUESTIONS = [
+  "What is the name of your pet?",
+  "What is your best friend's first name?",
+  "What is your favourite fruit?",
+  "What is the name of the street you grew up on?",
+  "What was the name of your first school?",
+  "What is your mother's maiden name?",
+];
+
 export default function RegisterPage() {
   const router = useRouter();
   const { register, user, isLoading } = useAuth();
@@ -19,6 +28,8 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0]);
+  const [securityAnswer, setSecurityAnswer] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -43,9 +54,13 @@ export default function RegisterPage() {
       toast.error("Phone number is required.");
       return;
     }
+    if (!securityAnswer.trim()) {
+      toast.error("Security answer is required.");
+      return;
+    }
     setLoading(true);
     try {
-      await register(email, password, realName, phone);
+      await register(email, password, realName, phone, securityQuestion, securityAnswer);
       toast.success("Account created! Let's set up your profile.");
       router.push("/onboarding");
     } catch (err: unknown) {
@@ -101,7 +116,6 @@ export default function RegisterPage() {
               autoComplete="tel"
               className="placeholder:text-gray-400"
             />
-            <p className="text-xs text-muted-foreground">Required to verify and contact you</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -127,11 +141,38 @@ export default function RegisterPage() {
               </button>
             </div>
           </div>
+
+          {/* Security Question */}
+          <div className="space-y-2 border-t-2 border-[#1D3557]/20 pt-3">
+            <Label htmlFor="secQ" className="text-[#1D3557] font-black text-xs uppercase tracking-wide">Security Question</Label>
+            <select
+              id="secQ"
+              title="Security question"
+              aria-label="Security question"
+              value={securityQuestion}
+              onChange={(e) => setSecurityQuestion(e.target.value)}
+              className="w-full px-3 py-2 rounded-md border-2 border-[#1D3557] bg-[var(--surface)] text-sm font-medium text-[#1D3557] focus:outline-none shadow-[2px_2px_0px_0px_#1D3557] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all"
+            >
+              {SECURITY_QUESTIONS.map((q) => (
+                <option key={q} value={q}>{q}</option>
+              ))}
+            </select>
+            <Input
+              id="secA"
+              placeholder="Your answer"
+              value={securityAnswer}
+              onChange={(e) => setSecurityAnswer(e.target.value)}
+              required
+              className="placeholder:text-gray-400"
+              autoComplete="off"
+            />
+            <p className="text-xs text-muted-foreground">Used for account recovery</p>
+          </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
           <Button
             type="submit"
-            className="w-full bg-[var(--navy)] hover:bg-[var(--navy-light)] text-[#F1FAEE]"
+            className="w-full bg-[#1D3557] hover:bg-[#2A4A73] text-[#F1FAEE] font-black border-2 border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
             disabled={loading}
           >
             {loading ? "Creating account…" : "Create account"}
