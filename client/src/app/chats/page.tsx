@@ -117,7 +117,7 @@ export default function ChatsListPage() {
             <p>No chats yet. Browse listings to start chatting!</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="flex flex-col gap-3">
             {chats.map((chat) => {
               const other = user._id === chat.buyer._id ? chat.seller : chat.buyer;
               const lastMsg = chat.messages[chat.messages.length - 1];
@@ -131,6 +131,7 @@ export default function ChatsListPage() {
                 <Link
                   key={chat._id}
                   href={`/chats/${chat._id}`}
+                  className="block"
                 >
                   <div className={`flex items-center gap-3 p-4 rounded-xl border-2 bg-[var(--surface)] hover:shadow-sm transition-shadow cursor-pointer ${hasUnread ? "border-[#E63946] shadow-[2px_2px_0px_0px_#E63946]" : "border-[#1D3557]"}`}>
                     <div className="relative shrink-0">
