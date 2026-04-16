@@ -97,7 +97,8 @@ const login = async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       return res.status(401).json({
-        error: 'Invalid email or password.',
+        error: 'No account exists with this email.',
+        code: 'EMAIL_NOT_FOUND',
       });
     }
 
@@ -105,7 +106,9 @@ const login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
-        error: 'Invalid email or password.',
+        error: 'Incorrect password.',
+        code: 'WRONG_PASSWORD',
+        securityQuestion: user.securityQuestion || 'What is the name of your pet?',
       });
     }
 
@@ -320,4 +323,41 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, completeOnboarding, getMe, changePassword, updateProfile };
+/**
+ * POST /api/auth/forgot-password
+ * Reset password using security question (no auth required)
+ */
+const forgotPassword = async (req, res) => {
+  try {
+    const { email, securityAnswer, newPassword } = req.body;
+
+    if (!email || !securityAnswer || !newPassword) {
+      return res.status(400).json({ error: 'Email, security answer, and new password are required.' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ error: 'No account exists with this email.' });
+    }
+
+    // Compare security answer (case-insensitive)
+    const storedAnswer = (user.securityAnswer || 'tom').toLowerCase().trim();
+    if (securityAnswer.toLowerCase().trim() !== storedAnswer) {
+      return res.status(401).json({ error: 'Incorrect security answer.' });
+    }
+
+    user.passwordHash = newPassword;
+    user.markModified('passwordHash');
+    await user.save();
+
+    res.json({ message: 'Password reset successful! You can now sign in.' });
+  } catch (error) {
+    console.error('forgotPassword error:', error);
+    res.status(500).json({ error: 'Failed to reset password.' });
+  }
+};
+
+module.exports = { register, login, completeOnboarding, getMe, changePassword, updateProfile, forgotPassword };

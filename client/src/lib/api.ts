@@ -1,6 +1,17 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 const TIMEOUT_MS = 30000; // 30 second timeout for complex requests
 
+export class ApiError extends Error {
+  code?: string;
+  data?: Record<string, unknown>;
+  constructor(message: string, code?: string, data?: Record<string, unknown>) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.data = data;
+  }
+}
+
 interface ApiOptions {
   method?: string;
   body?: unknown;
@@ -44,7 +55,11 @@ export async function api<T = unknown>(
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || `Server error: ${res.status}`);
+        throw new ApiError(
+          data.error || `Server error: ${res.status}`,
+          data.code,
+          data,
+        );
       }
 
       return data as T;

@@ -43,7 +43,7 @@ function getDefaultAvatar(nickname) {
 // ABV-IIITM Gwalior hostel blocks
 const HOSTEL_BLOCKS = [
   'BH-1', 'BH-2', 'BH-3', 'BH-4', 'BH-5',
-  'GH-1', 'GH-2',
+  'GH-1', 'IVH',
   'New BH', 'Day Scholar'
 ];
 

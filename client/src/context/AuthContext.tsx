@@ -97,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem("cm_token");
+    localStorage.removeItem("campus-market-notifications-v1");
     setToken(null);
     setUser(null);
   }, []);

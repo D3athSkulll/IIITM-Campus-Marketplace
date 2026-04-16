@@ -19,6 +19,7 @@ interface Listing {
   condition: string;
   category: string;
   listingType?: string;
+  rentalDetails?: { pricePerDay?: number; depositAmount?: number; maxRentalDays?: number };
   images: string[];
   interestCount: number;
   viewCount: number;
@@ -88,7 +89,10 @@ export default function ListingCard({ listing }: { listing: Listing }) {
           </h3>
           <div className="flex items-center justify-between">
             <span className="text-base font-black text-[#1D3557]">
-              ₹{listing.price.toLocaleString("en-IN")}
+              {isRent && listing.rentalDetails?.pricePerDay
+                ? <>₹{listing.rentalDetails.pricePerDay.toLocaleString("en-IN")}<span className="text-[10px] font-bold">/day</span></>
+                : <>₹{listing.price.toLocaleString("en-IN")}</>
+              }
             </span>
             <span className="text-[10px] text-[#1D3557] font-medium">{timeAgo}</span>
           </div>

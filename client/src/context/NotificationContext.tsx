@@ -43,10 +43,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  // Persist history whenever it changes
+  // Poll localStorage for logout (removeItem in same tab won't fire 'storage')
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!localStorage.getItem(HISTORY_KEY) && history.length > 0) {
+        setHistory([]);
+        setNotifications([]);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [history.length]);
+
+  // Persist history whenever it changes (skip if logged out)
   useEffect(() => {
     try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      if (history.length > 0) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      }
     } catch {
       // ignore
     }

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Plus, X, Trash2 } from "lucide-react";
 
@@ -32,34 +32,10 @@ const CATEGORIES = [
   "other",
 ];
 const CONDITIONS = [
-  {
-    value: "like-new",
-    label: "Like New",
-    desc: "Barely used, no defects",
-    color: "bg-[#A8DADC] border-[#1D3557] text-[#1D3557]",
-    dot: "bg-[#A8DADC]",
-  },
-  {
-    value: "good",
-    label: "Good",
-    desc: "Minor signs of use",
-    color: "bg-[#D8E2DC] border-[#1D3557] text-[#1D3557]",
-    dot: "bg-[#D8E2DC]",
-  },
-  {
-    value: "fair",
-    label: "Fair",
-    desc: "Noticeable wear, fully functional",
-    color: "bg-[#F9C74F] border-[#1D3557] text-[#1D3557]",
-    dot: "bg-[#F9C74F]",
-  },
-  {
-    value: "poor",
-    label: "Poor",
-    desc: "Heavy wear or minor defects",
-    color: "bg-[#E63946] border-[#1D3557] text-[#F1FAEE]",
-    dot: "bg-[#E63946]",
-  },
+  { value: "like-new", label: "Like New", desc: "Barely used, no defects", dot: "#2A9D8F" },
+  { value: "good", label: "Good", desc: "Minor signs of use", dot: "#A8DADC" },
+  { value: "fair", label: "Fair", desc: "Noticeable wear, fully functional", dot: "#F9C74F" },
+  { value: "poor", label: "Poor", desc: "Heavy wear or minor defects", dot: "#E63946" },
 ];
 
 export default function EditListingPage() {
@@ -307,45 +283,35 @@ export default function EditListingPage() {
                 <Label>
                   Condition <span className="text-destructive">*</span>
                 </Label>
-                <RadioGroup
-                  value={condition}
-                  onValueChange={setCondition}
-                  className="grid grid-cols-2 gap-2"
-                >
-                  {CONDITIONS.map((c) => (
-                    <div
-                      key={c.value}
-                      onClick={() => setCondition(c.value)}
-                      className={`flex items-start gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all shadow-[2px_2px_0px_0px_#1D3557]
-                        ${condition === c.value
-                          ? `${c.color} border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557]`
-                          : "bg-[var(--surface)] border-[#1D3557] hover:bg-[#D8E2DC]"
-                        }`}
-                    >
-                      <RadioGroupItem
-                        value={c.value}
-                        id={`cond-${c.value}`}
-                        className="sr-only"
-                      />
-                      <Label htmlFor={`cond-${c.value}`} className="cursor-pointer">
-                        <div className="font-medium text-sm flex items-center gap-1.5">
-                          <span className={`w-2.5 h-2.5 rounded-full border border-[#1D3557] ${c.dot}`} />
-                          {c.label}
-                          {condition === c.value && (
-                            <span className="ml-1 text-[9px] font-black uppercase tracking-wide">Selected</span>
-                          )}
+                <div className="grid grid-cols-2 gap-2">
+                  {CONDITIONS.map((c) => {
+                    const selected = condition === c.value;
+                    return (
+                      <button
+                        key={c.value}
+                        type="button"
+                        aria-label={`Condition: ${c.label} — ${c.desc}`}
+                        onClick={() => setCondition(c.value)}
+                        className={`flex items-center gap-2.5 p-3 rounded-md border-2 border-[#1D3557] transition-all text-left
+                          ${selected
+                            ? "bg-[var(--surface)] shadow-[3px_3px_0px_0px_#1D3557] ring-2 ring-[#1D3557]"
+                            : "bg-[var(--surface)] shadow-[2px_2px_0px_0px_#1D3557] opacity-60 hover:opacity-80"
+                          }`}
+                      >
+                        <span
+                          className="shrink-0 w-4 h-4 rounded-full border-2 border-[#1D3557] flex items-center justify-center"
+                          style={selected ? { backgroundColor: c.dot } : {}}
+                        >
+                          {selected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-xs font-black text-[#1D3557] leading-tight">{c.label}</div>
+                          <div className="text-[10px] font-medium text-[#1D3557]/60 leading-tight">{c.desc}</div>
                         </div>
-                        <div className={`text-xs ${
-                          condition === c.value
-                            ? (c.value === "poor" ? "text-[#F1FAEE]/90" : "text-[#1D3557]/85")
-                            : "text-[#1D3557]/80"
-                        }`}>
-                          {c.desc}
-                        </div>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Images */}

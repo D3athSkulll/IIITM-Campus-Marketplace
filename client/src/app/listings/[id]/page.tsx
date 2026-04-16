@@ -479,8 +479,14 @@ export default function ListingDetailPage() {
             <h1 className="text-2xl font-black leading-tight">{listing.title}</h1>
 
             {/* Price */}
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-[#1D3557]">₹{listing.price.toLocaleString()}</span>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              {isRental && listing.rentalDetails?.pricePerDay ? (
+                <span className="text-3xl font-black text-[#1D3557]">
+                  ₹{listing.rentalDetails.pricePerDay.toLocaleString()}<span className="text-base font-bold">/day</span>
+                </span>
+              ) : (
+                <span className="text-3xl font-black text-[#1D3557]">₹{listing.price.toLocaleString()}</span>
+              )}
               {listing.auctionMode && listing.auctionDeposit && (
                 <span className="text-sm font-medium text-[#1D3557]">Deposit: ₹{listing.auctionDeposit}</span>
               )}
