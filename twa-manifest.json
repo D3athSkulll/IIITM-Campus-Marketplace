@@ -1,40 +1,47 @@
 {
-  "packageId": "com.iiitm.campusmarketplace",
-  "host": "campus-marketplace.vercel.app",
-  "name": "Campus Marketplace",
+  "packageId": "app.vercel.campus_market_iiit.twa",
+  "host": "campus-market-iiit.vercel.app",
+  "name": "Campus Marketplace — ABV-IIITM Gwalior",
   "launcherName": "CampusMart",
   "display": "standalone",
-  "themeColor": "#0a1628",
-  "navigationColor": "#0a1628",
-  "navigationColorDark": "#0a1628",
-  "navigationDividerColor": "#00000000",
-  "navigationDividerColorDark": "#00000000",
-  "backgroundColor": "#0a1628",
-  "enableNotifications": false,
-  "startUrl": "/",
-  "iconUrl": "https://campus-marketplace.vercel.app/icons/icon-512.png",
-  "maskableIconUrl": "https://campus-marketplace.vercel.app/icons/icon-512.png",
+  "themeColor": "#1D3557",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#F1FAEE",
+  "enableNotifications": true,
+  "startUrl": "/?source=pwa",
+  "iconUrl": "https://campus-market-iiit.vercel.app/app_logo.png",
+  "maskableIconUrl": "https://campus-market-iiit.vercel.app/icons/icon-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
-    "path": "campus-marketplace-keystore.jks",
-    "alias": "campus-marketplace"
+    "path": "D:\\Study-Material\\Semester 5\\Sem 6\\6. HCI\\project-hci\\IIITM-Campus-Marketplace\\android.keystore",
+    "alias": "android"
   },
+  "appVersionName": "1",
   "appVersionCode": 1,
-  "appVersionName": "1.0.0",
-  "shortcuts": [
-    {
-      "name": "Sell Something",
-      "shortName": "Sell",
-      "url": "/listings/new",
-      "chosenIconUrl": "https://campus-marketplace.vercel.app/icons/icon-192.png"
-    },
-    {
-      "name": "My Chats",
-      "shortName": "Chats",
-      "url": "/chats",
-      "chosenIconUrl": "https://campus-marketplace.vercel.app/icons/icon-192.png"
-    }
-  ],
+  "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://campus-marketplace.vercel.app/manifest.json"
+  "webManifestUrl": "https://campus-market-iiit.vercel.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://campus-market-iiit.vercel.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait-primary",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1"
 }

@@ -84,7 +84,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
 
         {/* Details */}
         <div className="p-3 space-y-1">
-          <h3 className="font-black text-sm leading-tight line-clamp-2 text-[#1D3557] group-hover:text-[#1D3557]">
+          <h3 className="font-black text-sm leading-tight line-clamp-2 min-h-[2.5rem] text-[#1D3557] group-hover:text-[#1D3557]">
             {listing.title}
           </h3>
           <div className="flex items-center justify-between">

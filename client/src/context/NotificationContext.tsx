@@ -117,6 +117,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const clearHistory = useCallback(() => {
     setHistory([]);
+    localStorage.removeItem(HISTORY_KEY);
+    // Mark unread-messages notification as dismissed so it won't re-seed on reload
+    localStorage.setItem("cm-unread-notif-dismissed", "1");
   }, []);
 
   const removeHistoryItem = useCallback((id: string) => {

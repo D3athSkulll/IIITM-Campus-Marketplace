@@ -23,9 +23,14 @@ export default function GlobalNotifications() {
   const loadedRef = useRef(false);
 
   // On login, fetch unread count once and seed the notification bell
+  // Skip if user already dismissed unread notifications (persists across reload/login)
   useEffect(() => {
     if (!user || !token || loadedRef.current) return;
     loadedRef.current = true;
+
+    // If user previously opened the bell and dismissed, don't re-seed
+    if (localStorage.getItem("cm-unread-notif-dismissed")) return;
+
     api<{ unreadCount: number }>("/chats/unread-count", { token })
       .then(({ unreadCount }) => {
         if (unreadCount > 0) {
@@ -51,6 +56,8 @@ export default function GlobalNotifications() {
     if (!socket || !user) return;
 
     const handleMessage = (data: { senderName: string; message: string; chatId: string }) => {
+      // New real-time message: clear dismissed flag so notification seeds again on next reload
+      localStorage.removeItem("cm-unread-notif-dismissed");
       unreadChatsRef.current.add(data.chatId);
       const n = unreadChatsRef.current.size;
       addNotification({
