@@ -1,7 +1,10 @@
-const CACHE_NAME = 'campus-marketplace-v1';
+const CACHE_NAME = 'campus-marketplace-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
+  '/app_logo.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ];
 
 // Install — cache shell assets
@@ -22,22 +25,44 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch — network-first for API, cache-first for static
+// Fetch — network-first for pages, cache-first for assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
-  // Skip non-GET and API requests
-  if (request.method !== 'GET' || request.url.includes('/api/')) {
+  // Skip non-GET, API requests, and chrome-extension
+  if (request.method !== 'GET' || url.pathname.startsWith('/api/') || url.protocol === 'chrome-extension:') {
     return;
   }
 
+  // For navigation requests (HTML pages) — network first, fallback to cache
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => caches.match(request).then((r) => r || caches.match('/')))
+    );
+    return;
+  }
+
+  // For static assets — stale-while-revalidate
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        return response;
-      })
-      .catch(() => caches.match(request))
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => cached);
+
+      return cached || fetchPromise;
+    })
   );
 });
