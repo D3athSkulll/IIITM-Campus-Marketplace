@@ -1,7 +1,7 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-[var(--teal-mist)] via-[var(--lavender-mist)] to-[var(--pink-mist)] px-4 py-6">
-      <div className="w-full max-w-md">
+    <div className="fixed inset-0 overflow-y-auto overscroll-contain flex flex-col items-center bg-gradient-to-br from-[var(--teal-mist)] via-[var(--lavender-mist)] to-[var(--pink-mist)] px-4 py-6">
+      <div className="w-full max-w-md my-auto">
         <div className="text-center mb-4 sm:mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl overflow-hidden border-2 border-[#1D3557] shadow-lg mb-3">
             <img src="/app_logo.png" alt="CampusMarket" className="w-full h-full object-cover" />
