@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.iiitm.campusmarketplace",
+      "package_name": "app.vercel.campus_market_iiit.twa",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
+        "D2:01:93:C7:66:45:0A:B0:74:FE:A4:03:0A:DC:8E:D7:86:6B:5A:64:34:6D:0B:E2:C1:AF:15:9A:8F:25:82:28"
       ]
     }
   }
