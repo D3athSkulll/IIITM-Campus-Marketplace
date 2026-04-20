@@ -169,9 +169,13 @@ const getAllListings = async (req, res) => {
  */
 const deleteListing = async (req, res) => {
   try {
-    const listing = await Listing.findByIdAndDelete(req.params.id);
+    const listing = await Listing.findById(req.params.id);
     if (!listing) return res.status(404).json({ error: 'Listing not found.' });
-    res.json({ message: 'Listing deleted', listing });
+
+    const { deletedCount } = await Chat.deleteMany({ listing: listing._id });
+    await listing.deleteOne();
+
+    res.json({ message: 'Listing and linked chats deleted.', chatsDeleted: deletedCount });
   } catch (error) {
     console.error('deleteListing error:', error);
     res.status(500).json({ error: 'Failed to delete listing.' });

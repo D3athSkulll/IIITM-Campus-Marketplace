@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
 const { generateNickname } = require('../models/User');
+const PendingRegistration = require('../models/PendingRegistration');
+const { sendOtpEmail } = require('../config/mailer');
 
 /**
  * POST /api/auth/register
@@ -360,4 +362,111 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, completeOnboarding, getMe, changePassword, updateProfile, forgotPassword };
+/**
+ * POST /api/auth/send-otp
+ * Phase 1: validate registration fields, store pending record, email OTP
+ */
+const sendOtp = async (req, res) => {
+  try {
+    const { email, password, realName, phone, securityQuestion, securityAnswer } = req.body;
+
+    if (!email || !password || !realName || !phone) {
+      return res.status(400).json({ error: 'Email, password, real name, and phone number are required.' });
+    }
+    if (!/@iiitm\.ac\.in$/.test(email.toLowerCase())) {
+      return res.status(400).json({ error: 'Only @iiitm.ac.in email addresses are allowed.' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    }
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await PendingRegistration.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      { email: email.toLowerCase(), password, realName: realName.trim(), phone: phone.trim(),
+        securityQuestion: securityQuestion?.trim() || "What is the name of your pet?",
+        securityAnswer: securityAnswer?.trim().toLowerCase() || "tom",
+        otp, expiresAt },
+      { upsert: true, new: true }
+    );
+
+    await sendOtpEmail(email.toLowerCase(), otp);
+
+    res.json({ message: 'OTP sent to your email. Enter the 6-digit code to complete registration.' });
+  } catch (error) {
+    console.error('sendOtp error:', error);
+    res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+  }
+};
+
+/**
+ * POST /api/auth/verify-otp
+ * Phase 2: verify OTP, create user, return JWT
+ */
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ error: 'Email and OTP are required.' });
+    }
+
+    const pending = await PendingRegistration.findOne({ email: email.toLowerCase() });
+    if (!pending) {
+      return res.status(400).json({ error: 'No pending registration found. Please register again.' });
+    }
+    if (new Date() > pending.expiresAt) {
+      await pending.deleteOne();
+      return res.status(400).json({ error: 'OTP has expired. Please register again.' });
+    }
+    if (pending.otp !== String(otp).trim()) {
+      return res.status(400).json({ error: 'Invalid OTP. Please try again.' });
+    }
+
+    const user = new User({
+      email: pending.email,
+      passwordHash: pending.password,
+      realName: pending.realName,
+      phone: pending.phone,
+      anonymousNickname: generateNickname(),
+      securityQuestion: pending.securityQuestion,
+      securityAnswer: pending.securityAnswer,
+    });
+
+    await user.save();
+    await pending.deleteOne();
+
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      message: 'Account created successfully!',
+      token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        realName: user.realName,
+        phone: user.phone,
+        anonymousNickname: user.anonymousNickname,
+        showRealIdentity: user.showRealIdentity,
+        hostelBlock: user.hostelBlock,
+        onboardingComplete: false,
+      },
+    });
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    console.error('verifyOtp error:', error);
+    res.status(500).json({ error: 'Failed to create account. Please try again.' });
+  }
+};
+
+module.exports = { register, login, completeOnboarding, getMe, changePassword, updateProfile, forgotPassword, sendOtp, verifyOtp };
