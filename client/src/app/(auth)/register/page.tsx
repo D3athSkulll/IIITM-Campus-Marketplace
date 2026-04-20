@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Mail } from "lucide-react";
 
 const SECURITY_QUESTIONS = [
   "What is the name of your pet?",
@@ -22,7 +23,7 @@ const SECURITY_QUESTIONS = [
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, user, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [realName, setRealName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -32,6 +33,11 @@ export default function RegisterPage() {
   const [securityAnswer, setSecurityAnswer] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // OTP step
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
   useEffect(() => {
     if (!isLoading && user) {
       router.replace(user.onboardingComplete ? "/" : "/onboarding");
@@ -40,7 +46,7 @@ export default function RegisterPage() {
 
   if (isLoading || user) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.toLowerCase().endsWith("@iiitm.ac.in")) {
       toast.error("Only @iiitm.ac.in emails are allowed.");
@@ -60,15 +66,117 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register(email, password, realName, phone, securityQuestion, securityAnswer);
-      toast.success("Account created! Let's set up your profile.");
-      router.push("/onboarding");
+      await api<{ message: string }>("/auth/send-otp", {
+        method: "POST",
+        body: { email, password, realName, phone, securityQuestion, securityAnswer },
+      });
+      toast.success("OTP sent! Check your college email inbox.");
+      setOtpSent(true);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Registration failed");
+      toast.error(err instanceof Error ? err.message : "Failed to send OTP");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.trim().length !== 6) {
+      toast.error("Enter the 6-digit OTP from your email.");
+      return;
+    }
+    setVerifying(true);
+    try {
+      const data = await api<{ token: string; user: { onboardingComplete: boolean } }>("/auth/verify-otp", {
+        method: "POST",
+        body: { email, otp: otp.trim() },
+      });
+      localStorage.setItem("cm_token", data.token);
+      toast.success("Account created! Let's set up your profile.");
+      // Full page reload so AuthContext re-hydrates from localStorage
+      window.location.href = "/onboarding";
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Invalid or expired OTP");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      await api<{ message: string }>("/auth/send-otp", {
+        method: "POST",
+        body: { email, password, realName, phone, securityQuestion, securityAnswer },
+      });
+      toast.success("New OTP sent to your email.");
+      setOtp("");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to resend OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (otpSent) {
+    return (
+      <Card className="border-0 shadow-2xl bg-[var(--surface)]/95 backdrop-blur">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Mail className="w-6 h-6 text-[#1D3557]" />
+            <CardTitle className="text-2xl text-[#1D3557]">Check your email</CardTitle>
+          </div>
+          <CardDescription>
+            We sent a 6-digit code to <strong>{email}</strong>. Enter it below to complete registration.
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleVerifyOtp}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="otp">Verification Code</Label>
+              <Input
+                id="otp"
+                type="text"
+                inputMode="numeric"
+                placeholder="123456"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                maxLength={6}
+                required
+                autoFocus
+                className="text-center text-2xl tracking-[0.5em] font-bold placeholder:text-gray-300 placeholder:tracking-normal placeholder:text-base"
+              />
+              <p className="text-xs text-muted-foreground">Code expires in 10 minutes.</p>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3">
+            <Button
+              type="submit"
+              className="w-full bg-[#1D3557] hover:bg-[#2A4A73] text-[#F1FAEE] font-black border-2 border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+              disabled={verifying}
+            >
+              {verifying ? "Verifying…" : "Verify & Create Account"}
+            </Button>
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={loading}
+              className="text-sm text-[#1D3557] hover:underline disabled:opacity-50"
+            >
+              {loading ? "Sending…" : "Resend OTP"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOtpSent(false)}
+              className="text-sm text-muted-foreground hover:underline"
+            >
+              ← Back to registration form
+            </button>
+          </CardFooter>
+        </form>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-0 shadow-2xl bg-[var(--surface)]/95 backdrop-blur">
@@ -76,7 +184,7 @@ export default function RegisterPage() {
         <CardTitle className="text-2xl text-[#1D3557]">Create account</CardTitle>
         <CardDescription>Join the IIITM campus marketplace</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSendOtp}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="realName">Full Name</Label>
@@ -175,7 +283,7 @@ export default function RegisterPage() {
             className="w-full bg-[#1D3557] hover:bg-[#2A4A73] text-[#F1FAEE] font-black border-2 border-[#1D3557] shadow-[3px_3px_0px_0px_#1D3557] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
             disabled={loading}
           >
-            {loading ? "Creating account…" : "Create account"}
+            {loading ? "Sending OTP…" : "Send Verification Code"}
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             Already have an account?{" "}
